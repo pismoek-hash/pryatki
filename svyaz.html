@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<title>Проверка связи</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root { --paper:#f3f4f0; --ink:#2b2320; --soft:#5d5550; --card:#fff; --line:#2b2320; --ok:#2f7d4f; --bad:#b3392a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --paper:#1f1e1c; --ink:#f0ebe4; --soft:#b8afa6; --card:#2a2826; --line:#f0ebe4; --ok:#7fc79a; --bad:#ef8f80; color-scheme:dark; } }
+:root[data-theme="dark"] { --paper:#1f1e1c; --ink:#f0ebe4; --soft:#b8afa6; --card:#2a2826; --line:#f0ebe4; --ok:#7fc79a; --bad:#ef8f80; color-scheme:dark; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; padding:16px max(16px,env(safe-area-inset-right)) 32px max(16px,env(safe-area-inset-left)); }
+.wrap { max-width:520px; margin:0 auto; display:flex; flex-direction:column; gap:12px; }
+h1 { font-size:28px; line-height:1.15; margin:0; }
+p { margin:0; color:var(--soft); }
+.row { display:flex; gap:8px; }
+input { flex:1; min-width:0; font:800 24px system-ui,sans-serif; letter-spacing:.2em; text-align:center; padding:10px; border:2.5px solid var(--line); border-radius:12px; background:var(--card); color:var(--ink); }
+button { font:700 18px system-ui,sans-serif; padding:10px 16px; min-height:48px; border:2.5px solid #2b2320; border-radius:12px; background:#f2c14e; color:#2b2320; cursor:pointer; }
+button:focus-visible, input:focus-visible { outline:3px solid #7a3e8e; outline-offset:2px; }
+canvas { display:block; width:100%; aspect-ratio:1; background:#fbf6ea; border:2.5px solid var(--line); border-radius:12px; touch-action:none; }
+.stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.stat { background:var(--card); border:2px solid var(--line); border-radius:12px; padding:8px; text-align:center; min-width:0; }
+.stat b { display:block; font-size:21px; line-height:1.2; overflow-wrap:anywhere; }
+.stat span { font-size:13px; color:var(--soft); }
+.ok { color:var(--ok); } .bad { color:var(--bad); }
+[hidden] { display:none !important; }
+</style>
+<div class="wrap">
+  <h1>Проверка связи</h1>
+  <p id="hint">Откройте эту страницу на двух телефонах и введите один и тот же код из 4 цифр.</p>
+  <div class="row" id="joinRow">
+    <input id="code" inputmode="numeric" maxlength="4" placeholder="1234" aria-label="Код из 4 цифр">
+    <button type="button" id="join">Войти</button>
+  </div>
+  <p id="err" class="bad" hidden></p>
+  <div id="game" hidden>
+    <div class="wrap">
+      <div class="stats">
+        <div class="stat"><b id="net">…</b><span>связь</span></div>
+        <div class="stat"><b id="count">0</b><span>игроков</span></div>
+        <div class="stat"><b id="ping">…</b><span>задержка</span></div>
+      </div>
+      <canvas id="cv" width="600" height="600" aria-label="Поле: двигайте свою точку пальцем"></canvas>
+      <p>Двигайте пальцем: ваша точка с чёрной обводкой. Если на другом телефоне она двигается, связь работает.</p>
+      <button type="button" id="share">Позвать второй телефон</button>
+    </div>
+  </div>
+</div>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getDatabase, ref, set, onValue, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+
+const app = initializeApp({
+  apiKey: 'AIzaSyCirJsh46EwB1sRidAYmne541OJAzj6Brc',
+  authDomain: 'dayana-ada6e.firebaseapp.com',
+  databaseURL: 'https://dayana-ada6e-default-rtdb.europe-west1.firebasedatabase.app',
+  projectId: 'dayana-ada6e',
+  appId: '1:864433179276:web:d85f3fa9e12d6a3c9c49a9',
+});
+const auth = getAuth(app), db = getDatabase(app);
+const $ = id => document.getElementById(id);
+const cv = $('cv'), g = cv.getContext('2d');
+let uid = null, roomCode = '', me = { x: 300, y: 300 }, sent = null, peers = {}, shown = {};
+
+function fail(m) { $('err').textContent = m; $('err').hidden = false; }
+function colorOf(id) { let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) % 360; return `hsl(${h} 70% 55%)`; }
+
+async function join() {
+  const code = $('code').value.trim();
+  if (!/^\d{4}$/.test(code)) { fail('Нужен код из 4 цифр.'); return; }
+  $('err').hidden = true; $('join').disabled = true;
+  try {
+    uid = (await signInAnonymously(auth)).user.uid;
+    roomCode = 't' + code;
+    me = { x: 80 + Math.random() * 440, y: 80 + Math.random() * 440 };
+    await onDisconnect(ref(db, `rooms/${roomCode}/pos/${uid}`)).remove();
+    await onDisconnect(ref(db, `rooms/${roomCode}/ping/${uid}`)).remove();
+    onValue(ref(db, `rooms/${roomCode}/pos`), s => {
+      peers = s.val() || {};
+      $('count').textContent = Object.keys(peers).length;
+    }, e => fail('Нет доступа: ' + e.code));
+    onValue(ref(db, '.info/connected'), s => {
+      const on = !!s.val();
+      $('net').textContent = on ? 'есть' : 'нет';
+      $('net').className = on ? 'ok' : 'bad';
+    });
+    $('joinRow').hidden = true; $('game').hidden = false;
+    $('hint').textContent = 'Код комнаты: ' + code;
+    send(); setInterval(send, 100); pingLoop();
+    requestAnimationFrame(draw);
+  } catch (e) { fail('Не получилось войти: ' + (e.code || e.message)); $('join').disabled = false; }
+}
+function send() {
+  const x = Math.round(me.x), y = Math.round(me.y);
+  if (sent && sent.x === x && sent.y === y) return;
+  sent = { x, y };
+  set(ref(db, `rooms/${roomCode}/pos/${uid}`), sent).catch(e => fail('Ошибка записи: ' + e.code));
+}
+async function pingLoop() {
+  const samples = [];
+  for (;;) {
+    const t0 = performance.now();
+    try {
+      await set(ref(db, `rooms/${roomCode}/ping/${uid}`), Date.now());
+      samples.push(performance.now() - t0); if (samples.length > 5) samples.shift();
+      const sorted = [...samples].sort((a, b) => a - b), ms = Math.round(sorted[sorted.length >> 1]);
+      $('ping').textContent = ms + ' мс';
+      $('ping').className = ms < 400 ? 'ok' : 'bad';
+    } catch (e) { $('ping').textContent = 'ошибка'; $('ping').className = 'bad'; }
+    await new Promise(r => setTimeout(r, 2000));
+  }
+}
+function draw() {
+  g.fillStyle = '#fbf6ea'; g.fillRect(0, 0, 600, 600);
+  for (const id in shown) if (!peers[id]) delete shown[id];
+  for (const id in peers) {
+    const p = peers[id], mine = id === uid;
+    const s = shown[id] || (shown[id] = { x: p.x, y: p.y });
+    if (mine) { s.x = me.x; s.y = me.y; } else { s.x += (p.x - s.x) * 0.25; s.y += (p.y - s.y) * 0.25; }
+    g.beginPath(); g.arc(s.x, s.y, mine ? 30 : 26, 0, 7); g.fillStyle = colorOf(id); g.fill();
+    if (mine) { g.lineWidth = 5; g.strokeStyle = '#2b2320'; g.stroke(); }
+  }
+  requestAnimationFrame(draw);
+}
+function move(e) {
+  const r = cv.getBoundingClientRect();
+  me.x = Math.max(20, Math.min(580, (e.clientX - r.left) * 600 / r.width));
+  me.y = Math.max(20, Math.min(580, (e.clientY - r.top) * 600 / r.height));
+}
+cv.addEventListener('pointerdown', e => { e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (x) { /* fine */ } move(e); });
+cv.addEventListener('pointermove', e => { if (e.pressure > 0 || e.buttons) move(e); });
+$('join').addEventListener('click', join);
+$('code').addEventListener('keydown', e => { if (e.key === 'Enter') join(); });
+$('share').addEventListener('click', async () => {
+  const url = location.origin + location.pathname + '?room=' + roomCode.slice(1);
+  try { if (navigator.share) await navigator.share({ title: 'Проверка связи', url }); else { await navigator.clipboard.writeText(url); $('share').textContent = 'Ссылка скопирована'; } }
+  catch (e) { /* the share sheet was closed */ }
+});
+const room = new URLSearchParams(location.search).get('room');
+if (room && /^\d{4}$/.test(room)) { $('code').value = room; join(); }
+if (location.hash === '#test') window.__t = { me, get peers() { return peers; } };
+</script>
+</html>

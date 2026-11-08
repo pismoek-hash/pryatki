@@ -122,6 +122,30 @@ h2 { font-family: var(--display); font-size: 40px; font-weight: 700; margin: 0 0
 .rule b { font-family: var(--display); font-size: 26px; display: block; line-height: 1.1; margin-bottom: 2px; }
 .rule p { margin: 0; font-size: 15px; }
 @media (max-width: 520px) { #joy { width: 118px; height: 118px; } #bAct { min-width: 150px; } }
+#joyZone { display: none; }
+:root { --u: 1; }
+body.land .exit { display: none; }
+body.land.float.playing #joyZone { display: block; position: absolute; top: 36px; bottom: 0; left: 0; width: 50%; z-index: 1; touch-action: none; }
+body.land.float.lefty.playing #joyZone { left: auto; right: 0; }
+body.land .pad { position: absolute; inset: 0; display: block; padding: 0; pointer-events: none; z-index: 2; }
+body.land #joy { position: absolute; left: max(14px, env(safe-area-inset-left, 0px)); bottom: max(12px, env(safe-area-inset-bottom, 0px)); width: calc(118px * var(--u)); height: calc(118px * var(--u)); opacity: .5; box-shadow: none; }
+body.land.lefty #joy { left: auto; right: max(14px, env(safe-area-inset-right, 0px)); }
+body.land.float #joy { pointer-events: none; }
+body.land:not(.playing) #joy, body.land:not(.playing) #bAct { display: none; }
+body.land #joy.active { opacity: .9; }
+body.land #bAct { position: absolute; right: max(14px, env(safe-area-inset-right, 0px)); bottom: max(12px, env(safe-area-inset-bottom, 0px)); width: calc(100px * var(--u)); height: calc(100px * var(--u)); min-width: 0; padding: 4px; border-radius: 50%; font-size: 18px; line-height: 1; opacity: .9; }
+body.land.lefty #bAct { right: auto; left: max(14px, env(safe-area-inset-left, 0px)); }
+body.land .tools { position: static; display: contents; transform: none; }
+body.land .items { display: contents; }
+body.land #fear { position: absolute; left: max(8px, env(safe-area-inset-left, 0px)); top: 38px; width: 70px; height: 70px; z-index: 2; }
+body.land .it { position: absolute; z-index: 2; width: calc(54px * var(--u)); height: calc(54px * var(--u)); font-size: 24px; opacity: .92; right: calc(max(14px, env(safe-area-inset-right, 0px)) + var(--ix) * var(--u)); bottom: calc(max(12px, env(safe-area-inset-bottom, 0px)) + var(--iy) * var(--u)); }
+body.land.lefty .it { right: auto; left: calc(max(14px, env(safe-area-inset-left, 0px)) + var(--ix) * var(--u)); }
+body.land .it[data-k="bone"] { --ix: 2px; --iy: 116px; }
+body.land .it[data-k="poop"] { --ix: 64px; --iy: 104px; }
+body.land .it[data-k="pin"] { --ix: 108px; --iy: 62px; }
+body.land .it[data-k="toy"] { --ix: 114px; --iy: 2px; }
+body.land #bView { position: absolute; left: calc(max(8px, env(safe-area-inset-left, 0px)) + 78px); top: 42px; height: 44px; font-size: 18px; padding: 0 10px; z-index: 2; }
+body.land #bView.off { display: none; }
 </style>
 
 <div class="wrap">
@@ -135,6 +159,16 @@ h2 { font-family: var(--display); font-size: 40px; font-weight: 700; margin: 0 0
       <canvas id="game" width="960" height="540" aria-label="Игра «Прятки»"></canvas>
     </div>
     <button type="button" id="bExit" class="exit" aria-label="Выйти из полного экрана">✕</button>
+    <div id="joyZone" aria-hidden="true"></div>
+    <div class="netp" id="setp" hidden>
+      <div class="netcard">
+        <h3>Настройки</h3>
+        <label>Джойстик<select id="sStick"><option value="float">Появляется под пальцем</option><option value="fixed">Всегда на месте</option></select></label>
+        <label>Какой рукой удобнее нажимать<select id="sHand"><option value="right">Кнопки справа</option><option value="left">Кнопки слева (для левши)</option></select></label>
+        <label>Размер кнопок<select id="sSize"><option value="1">Обычный</option><option value="1.25">Большой</option></select></label>
+        <button type="button" id="sClose" class="go">Готово</button>
+      </div>
+    </div>
     <div class="netp" id="netp" hidden>
       <div class="netcard">
         <div id="nHome" style="display:flex;flex-direction:column;gap:10px">
@@ -180,7 +214,7 @@ h2 { font-family: var(--display); font-size: 40px; font-weight: 700; margin: 0 0
 
   <div class="keys">
     <button type="button" id="bFull" class="full">⛶ На весь экран</button>
-    <span>Можно просто нажать на мебель, и герой сам туда побежит.</span>
+    <span>Можно просто нажать на мебель, и герой сам туда побежит. На телефоне поверните экран боком: кнопки появятся прямо в игре.</span>
     <span><kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>↓</kbd> бежать</span>
     <span><kbd>Пробел</kbd> спрятаться / нюхать</span>
     <span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> предметы</span>
@@ -1309,6 +1343,7 @@ const SPR = {
       modeCard(40, 'hide', 'Прячься', 'Мурка прячется, Йода ищет', '#f6d9b8');
       modeCard(500, 'seek', 'Ищи', 'Йода ищет Мурку и вкусняшки', '#cfe3c3');
       button(W - 270, 20, 230, 58, 'С друзьями', () => openNet(), '#bfe0c2', 32);
+      button(40, 20, 190, 58, 'Настройки', () => { document.getElementById('setp').hidden = false; }, '#fff', 30);
       menuBtns = btns; ctx = mainCtx;
     }
     ctx.drawImage(menuImg, 0, 0); btns = menuBtns;
@@ -1344,7 +1379,7 @@ const SPR = {
     const r = cv.getBoundingClientRect();
     return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height };
   }
-  cv.addEventListener('pointerdown', e => {
+  function canvasDown(e) {
     e.preventDefault(); unlockSound();
     const p = canvasPoint(e);
     for (let i = btns.length - 1; i >= 0; i--) { const b = btns[i]; if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) { b.fn(); return; } }
@@ -1362,7 +1397,8 @@ const SPR = {
     if (blocked[t.y][t.x]) return;
     if (P.hidden) unhide();
     P.path = bfs(tileOf(P), toTile(t)); P.arrive = null;
-  });
+  }
+  cv.addEventListener('pointerdown', canvasDown);
   const GAMEKEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space'];
   addEventListener('keydown', e => {
     if (scr === 'play' && GAMEKEYS.includes(e.code)) e.preventDefault();
@@ -1411,6 +1447,7 @@ const SPR = {
   bView.addEventListener('pointerdown', e => { e.preventDefault(); unlockSound(); toggleView(); });
   bView.addEventListener('click', e => { if (e.detail === 0) toggleView(); });
 
+  let bodyPlaying = false;
   const bAct = document.getElementById('bAct');
   let actLabel = '';
   function syncAct() {
@@ -1422,6 +1459,7 @@ const SPR = {
     const key = label + on;
     if (key !== actLabel) { actLabel = key; bAct.textContent = label; bAct.classList.toggle('off', !on); }
     syncTools();
+    if (scr === 'play' !== bodyPlaying) { bodyPlaying = scr === 'play'; document.body.classList.toggle('playing', bodyPlaying); }
   }
   bAct.addEventListener('pointerdown', e => { e.preventDefault(); bAct.classList.add('on'); unlockSound(); doAction(); });
   ['pointerup', 'pointercancel', 'pointerleave'].forEach(n => bAct.addEventListener(n, () => bAct.classList.remove('on')));
@@ -1441,18 +1479,70 @@ const SPR = {
   joyEl.addEventListener('pointermove', e => { if (e.pointerId === joyId) joyMove(e); });
   const joyEnd = e => { if (e.pointerId !== joyId) return; joyId = null; joy.x = joy.y = 0; knob.style.transform = ''; };
   joyEl.addEventListener('pointerup', joyEnd); joyEl.addEventListener('pointercancel', joyEnd);
+  const zone = document.getElementById('joyZone');
+  let zoneStart = null;
+  function joyRelease() { joyEl.classList.remove('active'); joyEl.style.left = joyEl.style.top = joyEl.style.right = joyEl.style.bottom = ''; }
+  zone.addEventListener('pointerdown', e => {
+    if (joyId !== null) return;
+    e.preventDefault(); unlockSound();
+    joyId = e.pointerId; try { zone.setPointerCapture(joyId); } catch (x) { /* fine */ }
+    const w = joyEl.offsetWidth, h = joyEl.offsetHeight;
+    joyEl.style.right = 'auto'; joyEl.style.bottom = 'auto';
+    joyEl.style.left = Math.max(4, Math.min(innerWidth - w - 4, e.clientX - w / 2)) + 'px';
+    joyEl.style.top = Math.max(38, Math.min(innerHeight - h - 4, e.clientY - h / 2)) + 'px';
+    joyEl.classList.add('active');
+    zoneStart = { x: e.clientX, y: e.clientY, t: performance.now(), far: false };
+    joyMove(e);
+  });
+  zone.addEventListener('pointermove', e => {
+    if (e.pointerId !== joyId) return;
+    if (zoneStart && Math.hypot(e.clientX - zoneStart.x, e.clientY - zoneStart.y) > 12) zoneStart.far = true;
+    joyMove(e);
+  });
+  const zoneEnd = e => {
+    if (e.pointerId !== joyId) return;
+    joyId = null; joy.x = joy.y = 0; knob.style.transform = ''; joyRelease();
+    const s = zoneStart; zoneStart = null;
+    if (e.type === 'pointerup' && s && !s.far && performance.now() - s.t < 260) canvasDown({ clientX: e.clientX, clientY: e.clientY, preventDefault() {} });
+  };
+  zone.addEventListener('pointerup', zoneEnd); zone.addEventListener('pointercancel', zoneEnd);
 
   // ---------- full screen ----------
-  function fit() { document.documentElement.style.setProperty('--cw', Math.min(innerWidth, innerHeight * 16 / 9) + 'px'); }
-  addEventListener('resize', fit); fit();
+  const cl = document.body.classList;
+  let manualFs = false, triedFull = false;
+  const ui = { stick: 'float', hand: 'right', size: '1' };
+  try { Object.assign(ui, JSON.parse(localStorage.getItem('pryatki_ui')) || {}); } catch (e) { /* defaults */ }
+  const isTouch = () => navigator.maxTouchPoints > 0 || (window.matchMedia && matchMedia('(pointer: coarse)').matches);
+  function applyUi() {
+    cl.toggle('float', ui.stick === 'float'); cl.toggle('lefty', ui.hand === 'left');
+    document.documentElement.style.setProperty('--u', ui.size);
+    try { localStorage.setItem('pryatki_ui', JSON.stringify(ui)); } catch (e) { /* this visit only */ }
+  }
+  function layout() {
+    const land = isTouch() && innerWidth > innerHeight;
+    cl.toggle('land', land); cl.toggle('fs', land || manualFs);
+    if (!land) { triedFull = false; if (joyId === null) joyRelease(); }
+    document.documentElement.style.setProperty('--cw', Math.min(innerWidth, innerHeight * 16 / 9) + 'px');
+  }
+  addEventListener('resize', layout); addEventListener('orientationchange', layout);
+  [['sStick', 'stick'], ['sHand', 'hand'], ['sSize', 'size']].forEach(([id, key]) => {
+    const el = document.getElementById(id); el.value = ui[key];
+    el.addEventListener('change', () => { ui[key] = el.value; applyUi(); });
+  });
+  document.getElementById('sClose').addEventListener('click', () => { document.getElementById('setp').hidden = true; });
+  applyUi(); layout();
+  addEventListener('pointerup', () => {
+    const el = document.documentElement;
+    if (!triedFull && cl.contains('land') && !document.fullscreenElement && el.requestFullscreen) { triedFull = true; el.requestFullscreen().catch(() => {}); }
+  }, { passive: true });
   function setFs(on) {
-    document.body.classList.toggle('fs', on); fit();
+    manualFs = on; layout();
     if (on) { const el = document.documentElement; if (el.requestFullscreen) el.requestFullscreen().catch(() => {}); }
     else if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
   }
   document.getElementById('bFull').addEventListener('click', () => setFs(true));
   document.getElementById('bExit').addEventListener('click', () => setFs(false));
-  document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) { document.body.classList.remove('fs'); fit(); } });
+  document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) { manualFs = false; layout(); } });
 
   // ---------- play with friends ----------
   const FB = 'https://www.gstatic.com/firebasejs/10.12.2/firebase-';

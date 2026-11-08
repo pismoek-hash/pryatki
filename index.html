@@ -139,21 +139,25 @@ h2 { font-family: var(--display); font-size: 40px; font-weight: 700; margin: 0 0
 .rmsg:empty { display: none; }
 #joyZone { display: none; }
 :root { --u: 1; }
+html.landh, html.landh body { overflow: hidden; overscroll-behavior: none; height: 100%; }
+body.land .wrap > *:not(#stage) { display: none; }
+body.land #stage { width: var(--vw, 100vw); height: var(--vh, 100dvh); touch-action: none; -webkit-user-select: none; user-select: none; }
+body.land .netp { touch-action: pan-y; }
 body.land .exit { display: none; }
 body.land.float.playing #joyZone { display: block; position: absolute; top: 36px; bottom: 0; left: 0; width: 50%; z-index: 1; touch-action: none; }
 body.land.float.lefty.playing #joyZone { left: auto; right: 0; }
 body.land .pad { position: absolute; inset: 0; display: block; padding: 0; pointer-events: none; z-index: 2; }
-body.land #joy { position: absolute; left: max(14px, env(safe-area-inset-left, 0px)); bottom: max(12px, env(safe-area-inset-bottom, 0px)); width: calc(118px * var(--u)); height: calc(118px * var(--u)); opacity: .5; box-shadow: none; }
+body.land #joy { position: absolute; left: max(14px, env(safe-area-inset-left, 0px)); bottom: max(24px, env(safe-area-inset-bottom, 0px)); width: calc(118px * var(--u)); height: calc(118px * var(--u)); opacity: .5; box-shadow: none; }
 body.land.lefty #joy { left: auto; right: max(14px, env(safe-area-inset-right, 0px)); }
 body.land.float #joy { pointer-events: none; }
 body.land:not(.playing) #joy, body.land:not(.playing) #bAct { display: none; }
 body.land #joy.active { opacity: .9; }
-body.land #bAct { position: absolute; right: max(14px, env(safe-area-inset-right, 0px)); bottom: max(12px, env(safe-area-inset-bottom, 0px)); width: calc(100px * var(--u)); height: calc(100px * var(--u)); min-width: 0; padding: 4px; border-radius: 50%; font-size: 18px; line-height: 1; opacity: .9; }
+body.land #bAct { position: absolute; right: max(14px, env(safe-area-inset-right, 0px)); bottom: max(24px, env(safe-area-inset-bottom, 0px)); width: calc(100px * var(--u)); height: calc(100px * var(--u)); min-width: 0; padding: 4px; border-radius: 50%; font-size: 18px; line-height: 1; opacity: .9; }
 body.land.lefty #bAct { right: auto; left: max(14px, env(safe-area-inset-left, 0px)); }
 body.land .tools { position: static; display: contents; transform: none; }
 body.land .items { display: contents; }
 body.land #fear { position: absolute; left: max(8px, env(safe-area-inset-left, 0px)); top: 38px; width: 70px; height: 70px; z-index: 2; }
-body.land .it { position: absolute; z-index: 2; width: calc(54px * var(--u)); height: calc(54px * var(--u)); font-size: 24px; opacity: .92; right: calc(max(14px, env(safe-area-inset-right, 0px)) + var(--ix) * var(--u)); bottom: calc(max(12px, env(safe-area-inset-bottom, 0px)) + var(--iy) * var(--u)); }
+body.land .it { position: absolute; z-index: 2; width: calc(54px * var(--u)); height: calc(54px * var(--u)); font-size: 24px; opacity: .92; right: calc(max(14px, env(safe-area-inset-right, 0px)) + var(--ix) * var(--u)); bottom: calc(max(24px, env(safe-area-inset-bottom, 0px)) + var(--iy) * var(--u)); }
 body.land.lefty .it { right: auto; left: calc(max(14px, env(safe-area-inset-left, 0px)) + var(--ix) * var(--u)); }
 body.land .it[data-k="bone"] { --ix: 2px; --iy: 116px; }
 body.land .it[data-k="poop"] { --ix: 64px; --iy: 104px; }
@@ -203,7 +207,9 @@ body.land #bView.off { display: none; }
         <label>Джойстик<select id="sStick"><option value="float">Появляется под пальцем</option><option value="fixed">Всегда на месте</option></select></label>
         <label>Какой рукой удобнее нажимать<select id="sHand"><option value="right">Кнопки справа</option><option value="left">Кнопки слева (для левши)</option></select></label>
         <label>Размер кнопок<select id="sSize"><option value="1">Обычный</option><option value="1.25">Большой</option></select></label>
+        <label>Музыка<select id="sMus"><option value="on">Включена</option><option value="off">Выключена</option></select></label>
         <label>Качество<select id="sQ"><option value="auto">Авто</option><option value="high">Высокое</option><option value="low">Экономное (для слабых телефонов)</option></select></label>
+        <p style="margin:0;font-size:13px">На iPhone игра будет на весь экран без панели Safari, если нажать «Поделиться» и «На экран Домой».</p>
         <button type="button" id="sClose" class="go">Готово</button>
       </div>
     </div>
@@ -971,7 +977,7 @@ const SPR = {
       const q = P.hidden ? bfs(tileOf(Y), adj(P.hidden)) : bfs(tileOf(Y), toTile(tileOf(P))), d = q ? q.length : 99;
       fearStage = d > 16 ? 0 : d > 9 ? 1 : d > 4 ? 2 : 3;
     }
-    if (fearStage >= 2) { G.beatT -= dt; if (G.beatT <= 0) { G.beatT = fearStage === 3 ? 0.42 : 0.75; beep([72], 0.11, 'sine', 0.14); } }
+
     if (P.hidden) {
       G.smell = Math.min(1, G.smell + dt * (G.stinky > 0 ? 2 : 1) / L.smell);
       if (G.smell >= 1 && !G.smelled && !yodaBusy()) {
@@ -1583,6 +1589,7 @@ const SPR = {
   joyEl.addEventListener('pointerup', joyEnd); joyEl.addEventListener('pointercancel', joyEnd);
   const zone = document.getElementById('joyZone');
   let zoneStart = null;
+  function stickReset() { joyId = null; zoneStart = null; joy.x = joy.y = 0; knob.style.transform = ''; joyRelease(); }
   function joyRelease() { joyEl.classList.remove('active'); joyEl.style.left = joyEl.style.top = joyEl.style.right = joyEl.style.bottom = ''; }
   zone.addEventListener('pointerdown', e => {
     if (joyId !== null) return;
@@ -1612,7 +1619,7 @@ const SPR = {
   // ---------- full screen ----------
   const cl = document.body.classList;
   let manualFs = false, triedFull = false;
-  const ui = { stick: 'float', hand: 'right', size: '1', q: 'auto' };
+  const ui = { stick: 'float', hand: 'right', size: '1', q: 'auto', mus: 'on' };
   let autoLow = false;
   function setQual() {
     lowQ = ui.q === 'low' || (ui.q === 'auto' && autoLow); Q = lowQ ? 0.7 : 1;
@@ -1628,13 +1635,24 @@ const SPR = {
     try { localStorage.setItem('pryatki_ui', JSON.stringify(ui)); } catch (e) { /* this visit only */ }
   }
   function layout() {
-    const land = isTouch() && innerWidth > innerHeight;
-    cl.toggle('land', land); cl.toggle('fs', land || manualFs);
+    const vv = window.visualViewport, vw = Math.round(vv ? vv.width : innerWidth), vh = Math.round(vv ? vv.height : innerHeight);
+    const land = isTouch() && vw > vh, root = document.documentElement;
+    if (land !== cl.contains('land')) stickReset();
+    cl.toggle('land', land); cl.toggle('fs', land || manualFs); root.classList.toggle('landh', land);
     if (!land) { triedFull = false; if (joyId === null) joyRelease(); }
-    document.documentElement.style.setProperty('--cw', Math.min(innerWidth, innerHeight * 16 / 9) + 'px');
+    root.style.setProperty('--vw', vw + 'px'); root.style.setProperty('--vh', vh + 'px');
+    root.style.setProperty('--cw', Math.min(vw, vh * 16 / 9) + 'px');
+    if (land && (window.scrollX || window.scrollY)) window.scrollTo(0, 0);
   }
   addEventListener('resize', layout); addEventListener('orientationchange', layout);
-  [['sStick', 'stick'], ['sHand', 'hand'], ['sSize', 'size'], ['sQ', 'q']].forEach(([id, key]) => {
+  if (window.visualViewport) { visualViewport.addEventListener('resize', layout); visualViewport.addEventListener('scroll', layout); }
+  // Safari would otherwise zoom or scroll the page under two thumbs
+  const inPanel = e => e.target && e.target.closest && e.target.closest('.netp');
+  ['gesturestart', 'gesturechange', 'dblclick'].forEach(n => document.addEventListener(n, e => { if (cl.contains('land') && !inPanel(e)) e.preventDefault(); }, { passive: false }));
+  document.addEventListener('touchmove', e => { if (cl.contains('land') && !inPanel(e)) e.preventDefault(); }, { passive: false });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stickReset(); if (actx) { if (document.hidden) actx.suspend(); else if (ui.mus !== 'off' || actx.state === 'suspended') actx.resume(); } });
+  addEventListener('blur', stickReset);
+  [['sStick', 'stick'], ['sHand', 'hand'], ['sSize', 'size'], ['sQ', 'q'], ['sMus', 'mus']].forEach(([id, key]) => {
     const el = document.getElementById(id); el.value = ui[key];
     el.addEventListener('change', () => { ui[key] = el.value; applyUi(); });
   });
@@ -1652,6 +1670,68 @@ const SPR = {
   document.getElementById('bFull').addEventListener('click', () => setFs(true));
   document.getElementById('bExit').addEventListener('click', () => setFs(false));
   document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) { manualFs = false; layout(); } });
+
+  // ---------- music: public-domain melodies played by the synth ----------
+  const TUNES = [
+    { n: 'Григ, Утро', bpm: 132, w: 'triangle', m: 'G5 E5 D5 C5 D5 E5 G5 E5 D5 C5 D5 E5 D5 E5 G5 E5 G5 A5 E5 A5 G5 E5 D5 C5:2 _', b: 'C3 G2 C3 G2' },
+    { n: 'Моцарт, Маленькая ночная серенада', bpm: 150, w: 'square', m: 'G5:2 _ D5 G5:2 _ D5 G5 D5 G5 B5 D6:2 _ _ C6:2 _ A5 C6:2 _ A5 C6 A5 F#5 A5 D5:2 _ _', b: 'G2 G2 D3 D3' },
+    { n: 'Бетховен, Ода к радости', bpm: 150, w: 'triangle', m: 'E5:2 E5:2 F5:2 G5:2 G5:2 F5:2 E5:2 D5:2 C5:2 C5:2 D5:2 E5:2 E5:3 D5 D5:4', b: 'C3 G2 C3 G2' },
+    { n: 'Дворжак, Симфония Нового света', bpm: 92, w: 'triangle', m: 'E5:3 G5 G5:4 E5:3 D5 C5:4 D5:2 E5:2 G5:2 E5:2 D5:8', b: 'C3 G2 A2 G2' },
+    { n: 'Бах, Менуэт', bpm: 130, w: 'square', m: 'D5:2 G4 A4 B4 C5 D5:2 G4:2 G4:2 E5:2 C5 D5 E5 F#5 G5:2 G4:2 G4:2', b: 'G2 G2 C3 G2' },
+    { n: 'Бетховен, К Элизе', bpm: 130, w: 'triangle', m: 'E5 D#5 E5 D#5 E5 B4 D5 C5 A4:3 _ C4 E4 A4 B4:3 _ E4 G#4 B4 C5:3 _', b: 'A2 A2 E2 A2' },
+    { n: 'Григ, В пещере горного короля', bpm: 130, w: 'square', m: 'A4 B4 C5 D5 E5 C5 E5:2 D#5 B4 D#5:2 D5 A#4 D5:2 A4 B4 C5 D5 E5 C5 E5 A5 G5 E5 C5 E5 G5:4', b: 'A2 E2 A2 E2' },
+    { n: 'Бетховен, Пятая симфония', bpm: 170, w: 'square', m: '_ G4 G4 G4 D#4:4 _ F4 F4 F4 D4:4 _ G4 G4 G4 D#4 G#4 G#4 G#4 G4 D#5 D#5 D#5 C5:4', b: 'C3 G2 C3 G2' },
+    { n: 'Бах, Токката', bpm: 110, w: 'triangle', m: 'A5 G5 A5:3 _ G5 F5 E5 D5 C#5 D5:4 _ A4 G4 A4:3 _ E4 F4 C#4 D4:4 _', b: 'D3 A2 D3 A2' },
+    { n: 'Оффенбах, Канкан', bpm: 170, w: 'square', m: 'C5:2 D5 F5 E5 D5 G5:2 G5:2 G5 A5 E5 F5 D5:2 D5:2 D5 F5 E5 D5 C5 C6 B5 A5 G5 F5 E5 D5 C5:2', b: 'C3 G2 C3 G2' },
+    { n: 'Моцарт, Турецкое рондо', bpm: 150, w: 'triangle', m: 'B4 A4 G#4 A4 C5:2 _ D5 C5 B4 C5 E5:2 _ F5 E5 D#5 E5 B5 A5 G#5 A5 B5 A5 G#5 A5 C6:2 A5 C6', b: 'A2 E2 A2 E2' },
+  ];
+  const SEMI = { C: 0, 'C#': 1, D: 2, 'D#': 3, E: 4, F: 5, 'F#': 6, G: 7, 'G#': 8, A: 9, 'A#': 10, B: 11 };
+  const noteHz = s => { const m = /^([A-G]#?)(\d)$/.exec(s); return 440 * Math.pow(2, (SEMI[m[1]] + (+m[2] + 1) * 12 - 69) / 12); };
+  TUNES.forEach(q => {
+    q.seq = q.m.split(' ').map(tk => { const [n, len] = tk.split(':'); return { hz: n === '_' ? 0 : noteHz(n), len: +(len || 1) }; });
+    q.bass = q.b.split(' ').map(noteHz);
+  });
+  const mus = { idx: -1, i: 0, b: 0, next: 0, bNext: 0, dNext: 0, dLow: true, gain: null, level: 1 };
+  function musBlip(type, hz, at, dur, vol, out) {
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.value = hz;
+    g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(vol, at + 0.012); g.gain.exponentialRampToValueAtTime(0.0008, at + dur);
+    o.connect(g); g.connect(out); o.start(at); o.stop(at + dur + 0.02);
+  }
+  function dangerStage() { return scr === 'play' && G && G.mode === 'hide' && G.phase === 'go' && !G.home ? fearStage : 0; }
+  function musicTick() {
+    if (!actx || actx.state !== 'running') return;
+    if (!mus.gain) { mus.gain = actx.createGain(); mus.gain.gain.value = 1; mus.gain.connect(actx.destination); }
+    const now = actx.currentTime, on = ui.mus !== 'off', stage = on ? dangerStage() : 0;
+    const want = on ? [1, 0.6, 0.28, 0.1][stage] : 0;
+    if (Math.abs(want - mus.level) > 0.01) { mus.level += (want - mus.level) * 0.08; mus.gain.gain.setTargetAtTime(mus.level, now, 0.05); }
+    if (!on) { mus.next = mus.bNext = mus.dNext = now + 0.1; mus.idx = -1; return; }
+    const idx = scr === 'play' && G ? G.lv : TUNES.length - 1;
+    if (idx !== mus.idx) { mus.idx = idx; mus.i = 0; mus.b = 0; mus.next = mus.bNext = now + 0.08; }
+    if (mus.next < now - 0.4) { mus.next = mus.bNext = now + 0.05; }
+    const q = TUNES[idx], step = 60 / q.bpm / 2;
+    while (mus.next < now + 0.22) {
+      const n = q.seq[mus.i]; mus.i = (mus.i + 1) % q.seq.length;
+      if (n.hz) musBlip(q.w, n.hz, mus.next, Math.min(0.9, step * n.len * 0.95), q.w === 'square' ? 0.028 : 0.06, mus.gain);
+      mus.next += step * n.len;
+    }
+    while (mus.bNext < now + 0.22) {
+      const hz = q.bass[mus.b]; mus.b = (mus.b + 1) % q.bass.length;
+      musBlip('triangle', hz, mus.bNext, step * 3.2, 0.07, mus.gain); musBlip('triangle', hz, mus.bNext + step * 4, step * 3.2, 0.05, mus.gain);
+      mus.bNext += step * 8;
+    }
+    if (stage) {
+      if (mus.dNext < now) mus.dNext = now + 0.03;
+      const gap = [0, 0.85, 0.5, 0.27][stage];
+      while (mus.dNext < now + 0.22) {
+        const hz = mus.dLow ? 82.41 : 87.31; mus.dLow = !mus.dLow;
+        const v = [0, 0.16, 0.22, 0.3][stage];
+        musBlip('sawtooth', hz, mus.dNext, Math.min(0.26, gap * 0.8), v, actx.destination);
+        musBlip('triangle', hz * 2, mus.dNext, Math.min(0.26, gap * 0.8), v * 0.7, actx.destination);
+        mus.dNext += gap;
+      }
+    }
+  }
 
   // ---------- play with friends ----------
   const FB = 'https://www.gstatic.com/firebasejs/10.12.2/firebase-';
@@ -1983,10 +2063,10 @@ const SPR = {
     const fair = seekers.some(here) && murkas.some(here) && !netRemote.bot, mine = g.roles[fb.uid], myF = room.found[fb.uid];
     const won = mine === 'murka' ? (!myF || !!myF.home) : !survived;
     const coins = (won ? 20 : 5) + dailyBonus(), delta = fair ? (won ? 25 : -10) : 0;
-    prog.rating = Math.max(0, prog.rating + delta); prog.games++; if (won) prog.wins++;
+    const rating0 = prog.rating; prog.rating = Math.max(0, prog.rating + delta); const shown = prog.rating - rating0; prog.games++; if (won) prog.wins++;
     earn(coins);
     sfx.win();
-    R = { net: true, reward: '+' + coins + ' монет' + (delta ? ', рейтинг ' + (delta > 0 ? '+' : '') + delta : ''), rows, msg: !murkas.some(here) ? 'Все Мурки вышли из игры' : survived ? 'Мурки выиграли!' : 'Йода нашёл всех!' };
+    R = { net: true, reward: '+' + coins + ' монет' + (shown ? ', рейтинг ' + (shown > 0 ? '+' : '') + shown : ''), rows, msg: !murkas.some(here) ? 'Все Мурки вышли из игры' : survived ? 'Мурки выиграли!' : 'Йода нашёл всех!' };
     scr = 'result'; syncAct();
   }
   function drawNetResult(x, y, w) {
@@ -2145,6 +2225,7 @@ const SPR = {
   function frame(now) {
     const raw = (now - last) / 1000, dt = Math.min(0.1, raw); last = now;
     update(dt);
+    musicTick();
     if (raw < 0.25) { fAvg += (raw - fAvg) * 0.02; if (++fCount > 150 && ui.q === 'auto' && !autoLow && fAvg > 0.03) { autoLow = true; setQual(); } }
     fSkip = lowQ && !fSkip;
     if (!fSkip) draw();
@@ -2155,7 +2236,7 @@ const SPR = {
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(refreshCaches);
   requestAnimationFrame(frame);
   { const q = new URLSearchParams(location.search).get('room'); if (q && /^\d{4}$/.test(q)) openNet(q); }
-  if (location.hash === '#test') window.__pr = { get G() { return G; }, get R() { return R; }, get scr() { return scr; }, netBotTick, P, Y, M, cam, get zoom() { return zoom; }, LEVELS, SPOTS, start, spotAction, useItem, trip, toggleView, get pocket() { return pocket; }, get claimed() { return claimed; }, get fearStage() { return fearStage; }, get room() { return room; }, get fb() { return fb; }, prog, SKINS, rankOf, earn, openShop, openRank, get Q() { return Q; }, setAuto(v) { autoLow = v; setQual(); }, netSync, netRemote, netStart, netEnter, netCreate, netLeave, openNet, netTick, netSniff, netEmit, update, draw, hideIn, unhide, sniffAt, bfs, adj, tileOf, BASE, blocked, FURN };
+  if (location.hash === '#test') window.__pr = { get G() { return G; }, get R() { return R; }, get scr() { return scr; }, netBotTick, P, Y, M, cam, get zoom() { return zoom; }, LEVELS, SPOTS, start, spotAction, useItem, trip, toggleView, get pocket() { return pocket; }, get claimed() { return claimed; }, get fearStage() { return fearStage; }, get room() { return room; }, get fb() { return fb; }, TUNES, musicTick, get musIdx() { return mus.idx; }, get musLevel() { return mus.level; }, get actx() { return actx; }, dangerStage, layout, prog, SKINS, rankOf, earn, openShop, openRank, get Q() { return Q; }, setAuto(v) { autoLow = v; setQual(); }, netSync, netRemote, netStart, netEnter, netCreate, netLeave, openNet, netTick, netSniff, netEmit, update, draw, hideIn, unhide, sniffAt, bfs, adj, tileOf, BASE, blocked, FURN };
 })();
 </script>
 </html>

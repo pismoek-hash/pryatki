@@ -122,6 +122,21 @@ h2 { font-family: var(--display); font-size: 40px; font-weight: 700; margin: 0 0
 .rule b { font-family: var(--display); font-size: 26px; display: block; line-height: 1.1; margin-bottom: 2px; }
 .rule p { margin: 0; font-size: 15px; }
 @media (max-width: 520px) { #joy { width: 118px; height: 118px; } #bAct { min-width: 150px; } }
+.sgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; }
+.sk { background: #fff; border: 2px solid #2b2320; border-radius: 12px; padding: 6px; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
+.sk.on { background: #f6d9b8; }
+.sk canvas { width: 80px; height: 80px; aspect-ratio: 1; background: transparent; cursor: default; }
+.sk b { font-size: 14px; text-align: center; line-height: 1.15; }
+.sk button { font: 700 17px var(--display); min-height: 38px; padding: 2px 6px; width: 100%; border-radius: 10px; }
+.stabs { display: flex; gap: 8px; }
+.stabs button { flex: 1; }
+.stabs button.sel { background: #f2c14e; }
+.toprow { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-weight: 800; }
+#rList { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+#rList li { display: flex; justify-content: space-between; gap: 8px; background: #fff; border: 2px solid #2b2320; border-radius: 9px; padding: 3px 9px; font-weight: 700; overflow-wrap: anywhere; }
+#rList li.me { background: #f6d9b8; }
+.rmsg { margin: 0; font-size: 15px; font-weight: 700; color: #9a3b2a; }
+.rmsg:empty { display: none; }
 #joyZone { display: none; }
 :root { --u: 1; }
 body.land .exit { display: none; }
@@ -160,12 +175,35 @@ body.land #bView.off { display: none; }
     </div>
     <button type="button" id="bExit" class="exit" aria-label="Выйти из полного экрана">✕</button>
     <div id="joyZone" aria-hidden="true"></div>
+    <div class="netp" id="shop" hidden>
+      <div class="netcard">
+        <div class="toprow"><h3>Скины</h3><span id="shopCoins"></span></div>
+        <div class="stabs"><button type="button" id="tabCat">Мурка</button><button type="button" id="tabDog">Йода</button></div>
+        <div class="sgrid" id="shopGrid"></div>
+        <button type="button" id="shopClose" class="go">Готово</button>
+      </div>
+    </div>
+    <div class="netp" id="rankp" hidden>
+      <div class="netcard">
+        <div class="toprow"><h3>Рейтинг</h3><span id="rMine"></span></div>
+        <div id="rForm" style="display:flex;flex-direction:column;gap:8px">
+          <label>Ник (3–12 букв или цифр)<input id="pNick" maxlength="12" autocomplete="off"></label>
+          <label>PIN из 6 цифр<input id="pPin" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></label>
+          <div class="nrow"><button type="button" id="pNew" class="go" style="flex:1">Создать профиль</button><button type="button" id="pIn" style="flex:1">Войти</button></div>
+          <p style="margin:0;font-size:13px">PIN нужен, чтобы продолжить с другого телефона. Запиши его, восстановить нельзя.</p>
+        </div>
+        <p class="rmsg" id="rMsg"></p>
+        <ul id="rList"></ul>
+        <button type="button" id="rClose" class="go">Закрыть</button>
+      </div>
+    </div>
     <div class="netp" id="setp" hidden>
       <div class="netcard">
         <h3>Настройки</h3>
         <label>Джойстик<select id="sStick"><option value="float">Появляется под пальцем</option><option value="fixed">Всегда на месте</option></select></label>
         <label>Какой рукой удобнее нажимать<select id="sHand"><option value="right">Кнопки справа</option><option value="left">Кнопки слева (для левши)</option></select></label>
         <label>Размер кнопок<select id="sSize"><option value="1">Обычный</option><option value="1.25">Большой</option></select></label>
+        <label>Качество<select id="sQ"><option value="auto">Авто</option><option value="high">Высокое</option><option value="low">Экономное (для слабых телефонов)</option></select></label>
         <button type="button" id="sClose" class="go">Готово</button>
       </div>
     </div>
@@ -180,6 +218,7 @@ body.land #bView.off { display: none; }
         <div id="nRoom" hidden style="display:flex;flex-direction:column;gap:10px">
           <div id="nHead"><div><div style="font-weight:700;font-size:14px">Код комнаты</div><div id="nBig"></div></div><div id="nQr"></div></div>
           <button type="button" id="nShare">Позвать друга</button>
+          <button type="button" id="nSkin">Выбрать скин</button>
           <ul id="nList"></ul>
           <div id="nHostBox">
             <label>Кем будешь<select id="nRole"><option value="yoda">Йодой</option><option value="murka">Муркой</option></select></label>
@@ -228,6 +267,7 @@ body.land #bView.off { display: none; }
       <div class="rule"><b>Прячься за Мурку</b><p>Пока Йода считает, беги к мебели и прячься. Победа, если Йода устанет искать. А если выскочить и добежать до домика, будет лишняя звезда.</p></div>
       <div class="rule"><b>Пакости Мурки</b><p>Пока Йода считает, ищи косточку, кнопку и игрушку. Две съеденные вкусняшки дают одну какашку. Косточку прячь в мебель, остальное клади под ноги. Сама наступишь, сама виновата!</p></div>
       <div class="rule"><b>С друзьями</b><p>Создай комнату и отправь ссылку или код. Играть можно вдвоём, втроём или вчетвером. Найденная Мурка становится щенком или котёнком и ищет остальных.</p></div>
+      <div class="rule"><b>Монеты и скины</b><p>За победы и пакости даются монеты. В магазине по 10 скинов для Мурки и Йоды. Самые редкие открываются за рейтинг в игре с друзьями.</p></div>
       <div class="rule"><b>Карман</b><p>Всё, что осталось после победы, переходит на следующий уровень, но не больше 5 штук каждого. Проиграл, и карман вернётся как был.</p></div>
       <div class="rule"><b>Мурка дрожит</b><p>Чем ближе Йода, тем сильнее дыбом шерсть на портрете. В укрытии кнопка «На Йоду» покажет его вблизи.</p></div>
       <div class="rule"><b>Запах</b><p>Чем дольше Мурка сидит на одном месте, тем сильнее пахнет. Полоска заполнилась, значит Йода уже бежит сюда. Меняй укрытие!</p></div>
@@ -258,7 +298,7 @@ const SPR = {
 (() => {
   const W = 960, H = 540, T = 36, TOP = 0, HUD = 30, VIEW_H = H - HUD, COLS = 52, ROWS = 30, WORLD_W = COLS * T, WORLD_H = ROWS * T;
   const INK = '#2b2320';
-  const cv = document.getElementById('game'), mainCtx = cv.getContext('2d', { alpha: false }); let ctx = mainCtx;
+  const cv = document.getElementById('game'), mainCtx = cv.getContext('2d', { alpha: false }); let ctx = mainCtx, Q = 1, lowQ = false;
   const makeCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = Math.ceil(w); c.height = Math.ceil(h); return c; };
 
   const IMG = {};
@@ -595,9 +635,14 @@ const SPR = {
   });
   const SAVE = 'pryatki_v2', emptyBest = () => LEVELS.map(() => 0);
   let best = { hide: emptyBest(), seek: emptyBest() }, menuDirty = true, pocket = { bone: 0, poop: 0, pin: 0, toy: 0 }, claimed = [];
+  const prog = { coins: 0, owned: { murka: 1, snow: 1, ginger: 1, yoda: 1, choco: 1, dalma: 1 }, skin: { cat: 'murka', dog: 'yoda' }, rating: 0, games: 0, wins: 0, day: '', nick: '' };
+  const RANKS = [['Котёнок', 0], ['Охотник', 100], ['Мастер пряток', 300], ['Легенда', 700]];
+  const rankOf = r => { let i = 0; RANKS.forEach((q, n) => { if (r >= q[1]) i = n; }); return i; };
+  function earn(n) { prog.coins += n; saveBest(); netSync(); }
+  function dailyBonus() { const d = new Date().toISOString().slice(0, 10); if (prog.day === d) return 0; prog.day = d; return 15; }
   const POCKET_MAX = 5;
-  try { const s = JSON.parse(localStorage.getItem(SAVE)); if (s && s.hide && s.seek) { best = s; if (s.pocket) pocket = s.pocket; if (s.claimed) claimed = s.claimed; } } catch (e) { /* first run or storage off */ }
-  function saveBest() { menuDirty = true; try { localStorage.setItem(SAVE, JSON.stringify({ hide: best.hide, seek: best.seek, pocket, claimed })); } catch (e) { /* stays for this visit only */ } }
+  try { const s = JSON.parse(localStorage.getItem(SAVE)); if (s && s.hide && s.seek) { best = s; if (s.pocket) pocket = s.pocket; if (s.claimed) claimed = s.claimed; if (s.prog) Object.assign(prog, s.prog); } } catch (e) { /* first run or storage off */ }
+  function saveBest() { menuDirty = true; try { localStorage.setItem(SAVE, JSON.stringify({ hide: best.hide, seek: best.seek, pocket, claimed, prog })); } catch (e) { /* stays for this visit only */ } }
 
   // ---------- state ----------
   let scr = 'menu', G = null, L = LEVELS[0], R = null, btns = [], clock = 0;
@@ -684,14 +729,19 @@ const SPR = {
 
   function finish(win, msg, stars) {
     if (scr !== 'play') return;
+    let earned = 0;
     if (win) { sfx.win();
+      earned = 10 + stars * 5 + dailyBonus();
+      if (best[G.mode][G.lv] === 0) prog.rating += 5;
+      prog.wins++; prog.games++; earn(earned);
       if (G.mode === 'hide') {
         if (!claimed[G.lv]) { claimed[G.lv] = 1; pocket = Object.assign({}, G.pocket); }
         else Object.keys(pocket).forEach(k => { pocket[k] = Math.min(pocket[k], G.pocket[k]); });
         saveBest();
       }
       if (stars > best[G.mode][G.lv]) { best[G.mode][G.lv] = stars; saveBest(); } } else sfx.lose();
-    R = { win, msg, stars: win ? stars : 0, mode: G.mode, lv: G.lv };
+    if (!win) { prog.games++; saveBest(); }
+    R = { win, msg, stars: win ? stars : 0, mode: G.mode, lv: G.lv, earned };
     scr = 'result'; syncAct();
   }
 
@@ -743,6 +793,7 @@ const SPR = {
       G.learn[k]++;
     }
     G.traps = G.traps.filter(q => q !== t);
+    earn(2);
     Y.st = 'react'; Y.react = k; Y.path = null;
     if (k === 'poop') { Y.t = 4; bubble('Фу-у-у!', 4); say('Йода вляпался!', 2); sfx.fu(); }
     else if (k === 'pin') { Y.t = 1.1; Y.limp = 5; bubble('Ай-ай-ай!', 1.1); say('Йода наступил на кнопку!', 2); sfx.bark(); }
@@ -1088,21 +1139,67 @@ const SPR = {
   }
 
   const toonCache = new Map(), TOON_W = 170, TOON_H = 150, TOON_X = 75, TOON_Y = 140, FRAMES = 6;
-  function toon(kind, x, y, face, moving, mood, sc) {
+  function toon(kind, x, y, face, moving, mood, sc, skin) {
     const fast = mood === 'chase' || mood === 'happy' || mood === 'chew', step = fast ? 0.116 : kind === 'cat' ? 0.262 : 0.21;
     const rate = moving ? (kind === 'cat' ? 2.4 : mood === 'chase' ? 2.6 : 1.8) : 1 / (FRAMES * step);
-    const i = Math.floor(clock * rate * FRAMES) % FRAMES, key = kind + mood + (moving ? 1 : 0) + i + sc;
+    const i = Math.floor(clock * rate * FRAMES) % FRAMES, key = kind + mood + (moving ? 1 : 0) + i + sc + (skin || '');
     let c = toonCache.get(key);
     if (!c) {
       c = makeCanvas(TOON_W * sc, TOON_H * sc);
       const keep = ctx; ctx = c.getContext('2d'); ctx.scale(sc, sc); ctx.translate(TOON_X, TOON_Y); toonT = i * step;
+      const s = skinOf(kind, skin), keepC = Object.assign({}, CAT), keepD = Object.assign({}, DOG);
+      Object.assign(kind === 'cat' ? CAT : DOG, s.pal || {});
       if (kind === 'cat') drawCatToon(0, 0, 1, moving ? i / FRAMES : 0, mood, false, 0); else drawDogToon(0, 0, 1, moving ? i / FRAMES : 0, mood);
+      if (s.over) skinOver(kind, s.over, mood);
+      Object.assign(CAT, keepC); Object.assign(DOG, keepD);
       ctx = keep; toonCache.set(key, c);
     }
     ctx.save(); ctx.translate(x, y + 12); ctx.scale(face, 1); ctx.drawImage(c, -TOON_X * sc, -TOON_Y * sc); ctx.restore();
   }
-  const drawCat = (x, y, face, moving, mood, sc = 0.55) => toon('cat', x, y, face, moving, mood, sc);
-  const drawDog = (x, y, face, moving, mood, sc = 0.5) => toon('dog', x, y, face, moving, mood, sc);
+  const drawCat = (x, y, face, moving, mood, sc = 0.55, skin) => toon('cat', x, y, face, moving, mood, sc, skin);
+  const drawDog = (x, y, face, moving, mood, sc = 0.5, skin) => toon('dog', x, y, face, moving, mood, sc, skin);
+  const SKINS = {
+    cat: [
+      { id: 'murka', n: 'Мурка' }, { id: 'snow', n: 'Снежок', pal: { fur: '#f7f3ec', cream: '#efe6da', white: '#ffffff' } },
+      { id: 'ginger', n: 'Рыжик', pal: { fur: '#e08a3c', cream: '#f2b36b', white: '#fde6c8', eye: '#7fb65a' } },
+      { id: 'night', n: 'Ночка', price: 150, pal: { fur: '#2f2c33', cream: '#45414c', white: '#55505c', eye: '#f2d24e' } },
+      { id: 'tiger', n: 'Тигрёнок', price: 150, pal: { fur: '#d9913f', cream: '#e9b26a', white: '#f7e2c0' }, over: 'tiger' },
+      { id: 'candy', n: 'Конфетка', price: 400, pal: { fur: '#f5b8d0', cream: '#bfe3f0', white: '#fff6c9', eye: '#c06ad0' } },
+      { id: 'pixel', n: 'Пиксельная', price: 400, pal: { fur: '#7fb9a8', cream: '#e7d36b', white: '#f0f0e6' }, over: 'pixel' },
+      { id: 'galaxy', n: 'Галактика', price: 900, pal: { fur: '#2a2356', cream: '#4b3a8e', white: '#7a5cc4', eye: '#7fe8ff' }, over: 'stars' },
+      { id: 'neon', n: 'Неон', rank: 2, pal: { fur: '#1d1d2b', cream: '#19f0c8', white: '#ff3fa4', eye: '#ffe14d' }, over: 'neon' },
+      { id: 'kingcat', n: 'Золотая корона', rank: 3, pal: { fur: '#e8b83a', cream: '#f6d675', white: '#fff0b8', eye: '#7a3e8e' }, over: 'crownC' },
+    ],
+    dog: [
+      { id: 'yoda', n: 'Йода' }, { id: 'choco', n: 'Шоколад', pal: { fur: '#5b3a24', tan: '#a56c3f', ear: '#4a2e1c' } },
+      { id: 'dalma', n: 'Пятнышко', pal: { fur: '#f5f2ec', tan: '#e6ddcf', ear: '#2b2b2b', chin: '#ffffff' }, over: 'spots' },
+      { id: 'husky', n: 'Хаски', price: 150, pal: { fur: '#77808c', tan: '#eef0f2', ear: '#59616c' } },
+      { id: 'cowboy', n: 'Ковбой', price: 150, pal: { fur: '#7a4a2a', tan: '#c98a4b', ear: '#5d3820', collar: '#d1495b' }, over: 'cowboy' },
+      { id: 'pirate', n: 'Пират', price: 400, over: 'pirate' },
+      { id: 'knight', n: 'Рыцарь', price: 400, pal: { fur: '#9aa3ad', tan: '#c8ced6', ear: '#7a838d', collar: '#d1495b' }, over: 'knight' },
+      { id: 'robot', n: 'Робот', price: 900, pal: { fur: '#9fb2c2', tan: '#5fd0e0', ear: '#7a8fa0', collar: '#f2c14e' }, over: 'robot' },
+      { id: 'lava', n: 'Лава', rank: 2, pal: { fur: '#2c1a17', tan: '#ff7a1f', ear: '#1c100e', collar: '#ffcf33' }, over: 'lava' },
+      { id: 'kingdog', n: 'Золотой чемпион', rank: 3, pal: { fur: '#e8b83a', tan: '#fff0b8', ear: '#c8962a', collar: '#7a3e8e' }, over: 'crownD' },
+    ],
+  };
+  const skinOf = (kind, id) => SKINS[kind].find(s => s.id === id) || SKINS[kind][0];
+  function skinOver(kind, over, mood) {
+    const hy = mood === 'chew' || mood === 'sleep' ? -44 : -84, dots = (list, col, r) => { ctx.fillStyle = col; list.forEach(([a, b]) => { ctx.beginPath(); ctx.arc(a, b, r, 0, 7); ctx.fill(); }); };
+    const crown = (x, y) => { ctx.beginPath(); ctx.moveTo(x - 20, y); ctx.lineTo(x - 20, y - 20); ctx.lineTo(x - 9, y - 9); ctx.lineTo(x, y - 25); ctx.lineTo(x + 9, y - 9); ctx.lineTo(x + 20, y - 20); ctx.lineTo(x + 20, y); ctx.closePath(); sf('#ffd24a', 3); dots([[x, y - 6]], '#d1495b', 4); };
+    if (over === 'tiger') { ctx.lineWidth = 5; ctx.strokeStyle = '#6b3d16'; ctx.lineCap = 'round'; [-22, -10, 2].forEach(a => { ctx.beginPath(); ctx.moveTo(a, -53); ctx.lineTo(a + 3, -38); ctx.stroke(); }); [20, 30, 40].forEach(a => { ctx.beginPath(); ctx.moveTo(a, -80); ctx.lineTo(a, -71); ctx.stroke(); }); }
+    else if (over === 'pixel') { [[-26, -44, '#d1495b'], [-12, -30, '#e9b949'], [4, -48, '#5f7fd1'], [14, -32, '#d1495b']].forEach(([a, b, c]) => { ctx.fillStyle = c; ctx.fillRect(a, b, 11, 11); }); ctx.fillStyle = INK; ctx.fillRect(14, -68, 15, 9); ctx.fillRect(33, -68, 15, 9); ctx.fillRect(28, -66, 6, 3); }
+    else if (over === 'stars') dots([[-22, -40], [-6, -48], [10, -30], [18, -72], [36, -76], [-14, -28]], '#fff', 2.6);
+    else if (over === 'neon') { ctx.lineWidth = 3; ctx.strokeStyle = '#19f0c8'; ctx.beginPath(); ctx.ellipse(0, -34, 38, 26, 0, 0, 7); ctx.stroke(); ctx.strokeStyle = '#ff3fa4'; ctx.beginPath(); ctx.ellipse(30, -60, 28, 25, 0, 0, 7); ctx.stroke(); }
+    else if (over === 'crownC') crown(30, -80);
+    else if (over === 'crownD') { crown(42, hy - 22); ctx.beginPath(); ctx.arc(30, hy + 28, 10, 0, 7); sf('#ffd24a', 3); }
+    else if (over === 'spots') { dots([[-24, -52], [-6, -60], [14, -48], [-16, -38], [30, -52]], '#2b2b2b', 6); dots([[34, hy - 10], [52, hy - 16]], '#2b2b2b', 4); }
+    else if (over === 'cowboy') { ctx.beginPath(); ctx.ellipse(42, hy - 22, 40, 9, -0.05, 0, 7); sf('#a8703a', 3); rr(24, hy - 46, 36, 26, 9); sf('#b67d44', 3); }
+    else if (over === 'pirate') { ctx.beginPath(); ctx.moveTo(10, hy - 20); ctx.quadraticCurveTo(42, hy - 62, 74, hy - 20); ctx.closePath(); sf('#26232a', 3); dots([[42, hy - 34]], '#f7f3ec', 5); ctx.beginPath(); ctx.arc(47, hy - 5, 10, 0, 7); ctx.fillStyle = '#111'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#111'; ctx.beginPath(); ctx.moveTo(22, hy - 14); ctx.lineTo(68, hy - 8); ctx.stroke(); }
+    else if (over === 'knight') { ctx.beginPath(); ctx.arc(42, hy - 8, 29, Math.PI, 0); ctx.closePath(); sf('#c8ced6', 3); ctx.beginPath(); ctx.moveTo(42, hy - 37); ctx.lineTo(42, hy - 56); ctx.lineWidth = 6; ctx.strokeStyle = '#d1495b'; ctx.stroke(); ctx.beginPath(); ctx.arc(0, -46, 19, 0, 7); sf('#d1495b', 3); ctx.beginPath(); ctx.moveTo(0, -63); ctx.lineTo(0, -29); ctx.moveTo(-17, -46); ctx.lineTo(17, -46); ctx.lineWidth = 4; ctx.strokeStyle = '#f7f3ec'; ctx.stroke(); }
+    else if (over === 'robot') { ctx.beginPath(); ctx.moveTo(42, hy - 24); ctx.lineTo(42, hy - 46); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.stroke(); ctx.beginPath(); ctx.arc(42, hy - 50, 7, 0, 7); sf('#d1495b', 2.5); dots([[-30, -54], [-12, -60], [8, -60], [26, -54], [24, hy - 12]], '#47566a', 3.5); }
+    else if (over === 'lava') { ctx.lineWidth = 4; ctx.strokeStyle = '#ff7a1f'; ctx.lineCap = 'round'; [[[-32, -56], [-20, -46], [-26, -36]], [[-6, -66], [2, -50], [-6, -40]], [[20, -58], [30, -44]], [[32, hy - 16], [40, hy - 6], [32, hy + 2]]].forEach(l => { ctx.beginPath(); l.forEach(([a, b], n) => n ? ctx.lineTo(a, b) : ctx.moveTo(a, b)); ctx.stroke(); }); }
+  }
+  const mySkin = kind => prog.skin[kind];
   function drawBone(x, y, a, s) { ctx.save(); ctx.translate(x, y); ctx.rotate(a); sprite('bone', 0, 0, Math.round(80 * s)); ctx.restore(); }
   const hazImg = {};
   function hazard(kind, col) {
@@ -1238,7 +1335,7 @@ const SPR = {
     const items = [], ents = [];
     const ent = (e, fn) => { ents.push(e); items.push({ y: e.y + 12, fn }); };
     if (G.mode === 'hide') {
-      if (!P.hidden) ent(P, () => { shadow(P.x, P.y, 18); if (P.inv <= 0 || P.stun > 0 || Math.floor(clock * 10) % 2) drawCat(P.x, P.y, P.face, P.moving, P.stun > 0 ? 'dizzy' : 'calm'); });
+      if (!P.hidden) ent(P, () => { shadow(P.x, P.y, 18); if (P.inv <= 0 || P.stun > 0 || Math.floor(clock * 10) % 2) drawCat(P.x, P.y, P.face, P.moving, P.stun > 0 ? 'dizzy' : 'calm', 0.55, mySkin('cat')); });
       if (!G.net && seen(Y.x, Y.y)) ent(Y, () => {
         shadow(Y.x, Y.y, 24);
         const r = Y.st === 'react' ? Y.react : '', jx = r === 'poop' ? Math.sin(clock * 26) * 5 : 0;
@@ -1304,6 +1401,7 @@ const SPR = {
     }
     drawHUD();
     if (!countingSeek && zoom > 0.75) drawMini();
+    if (G.phase === 'count') button(W / 2 + 10, HUD + 6, 150, 42, 'Сменить скин', openShop, '#fff', 22);
     if (G.mode === 'hide' && G.phase === 'count') outlined(`Йода считает: ${Math.ceil(G.count)}`, 150, HUD + 28, 32, '#7a3e8e');
     if (G.home) outlined('Ты дома! Смотри, как играют другие.', W / 2, HUD + 28, 30, '#2f7d4f');
     if (G.bannerT > 0 && !countingSeek) outlined(G.banner, W / 2, H - 30, 34, '#9a3b2a');
@@ -1342,8 +1440,10 @@ const SPR = {
       outlined('Прятки', W / 2, 54, 78, '#7a3e8e');
       modeCard(40, 'hide', 'Прячься', 'Мурка прячется, Йода ищет', '#f6d9b8');
       modeCard(500, 'seek', 'Ищи', 'Йода ищет Мурку и вкусняшки', '#cfe3c3');
-      button(W - 270, 20, 230, 58, 'С друзьями', () => openNet(), '#bfe0c2', 32);
-      button(40, 20, 190, 58, 'Настройки', () => { document.getElementById('setp').hidden = false; }, '#fff', 30);
+      button(760, 20, 164, 58, 'С друзьями', () => openNet(), '#bfe0c2', 27);
+      button(616, 20, 134, 58, 'Рейтинг', openRank, '#d7c4e6', 27);
+      button(36, 20, 150, 58, 'Настройки', () => { document.getElementById('setp').hidden = false; }, '#fff', 26);
+      button(196, 20, 150, 58, 'Скины: ' + prog.coins, openShop, '#f2c14e', 26);
       menuBtns = btns; ctx = mainCtx;
     }
     ctx.drawImage(menuImg, 0, 0); btns = menuBtns;
@@ -1355,6 +1455,7 @@ const SPR = {
     rr(x, y, w, h, 22); sf('#fbf6ea', 4);
     text(R.win ? 'Победа!' : 'Ой!', x + w / 2, y + 48, 62, R.win ? '#2f7d4f' : '#9a3b2a');
     text(R.msg, x + w / 2, y + 108, 36, INK);
+    if (R.earned) outlined('+' + R.earned + ' монет', x + w - 90, y + 44, 30, '#b8860b');
     if (R.win) [-1, 0, 1].forEach(q => star(x + w / 2 + q * 78, y + 180, 34, R.stars >= q + 2));
     else { ctx.save(); if (R.mode === 'hide') drawDog(x + w / 2 - 15, y + 240, 1, false, 'happy', 0.85); else drawCat(x + w / 2 - 10, y + 240, 1, false, 'angry', 0.95); ctx.restore(); }
     if (R.win && R.mode === 'hide') {
@@ -1369,6 +1470,7 @@ const SPR = {
     if (hasNext) button(bx, by, bw, 62, 'Дальше', () => start(m, l + 1), '#f2c14e');
   }
   function draw() {
+    mainCtx.setTransform(Q, 0, 0, Q, 0, 0);
     btns = [];
     if (scr === 'menu') drawMenu();
     else { drawGame(); if (scr === 'result') drawResult(); }
@@ -1510,12 +1612,19 @@ const SPR = {
   // ---------- full screen ----------
   const cl = document.body.classList;
   let manualFs = false, triedFull = false;
-  const ui = { stick: 'float', hand: 'right', size: '1' };
+  const ui = { stick: 'float', hand: 'right', size: '1', q: 'auto' };
+  let autoLow = false;
+  function setQual() {
+    lowQ = ui.q === 'low' || (ui.q === 'auto' && autoLow); Q = lowQ ? 0.7 : 1;
+    const w = Math.round(W * Q), h = Math.round(H * Q);
+    if (cv.width !== w) { cv.width = w; cv.height = h; menuDirty = true; hudKey = ''; }
+  }
   try { Object.assign(ui, JSON.parse(localStorage.getItem('pryatki_ui')) || {}); } catch (e) { /* defaults */ }
   const isTouch = () => navigator.maxTouchPoints > 0 || (window.matchMedia && matchMedia('(pointer: coarse)').matches);
   function applyUi() {
     cl.toggle('float', ui.stick === 'float'); cl.toggle('lefty', ui.hand === 'left');
     document.documentElement.style.setProperty('--u', ui.size);
+    setQual();
     try { localStorage.setItem('pryatki_ui', JSON.stringify(ui)); } catch (e) { /* this visit only */ }
   }
   function layout() {
@@ -1525,7 +1634,7 @@ const SPR = {
     document.documentElement.style.setProperty('--cw', Math.min(innerWidth, innerHeight * 16 / 9) + 'px');
   }
   addEventListener('resize', layout); addEventListener('orientationchange', layout);
-  [['sStick', 'stick'], ['sHand', 'hand'], ['sSize', 'size']].forEach(([id, key]) => {
+  [['sStick', 'stick'], ['sHand', 'hand'], ['sSize', 'size'], ['sQ', 'q']].forEach(([id, key]) => {
     const el = document.getElementById(id); el.value = ui[key];
     el.addEventListener('change', () => { ui[key] = el.value; applyUi(); });
   });
@@ -1560,8 +1669,10 @@ const SPR = {
   async function netBoot() {
     if (fb) return fb;
     const [a, b, c] = await Promise.all(['app', 'auth', 'database'].map(x => import(FB + x + '.js')));
-    const app = a.initializeApp(FB_CONFIG), db = c.getDatabase(app), user = (await b.signInAnonymously(b.getAuth(app))).user;
-    fb = Object.assign({}, c, { db, uid: user.uid, off: 0 });
+    const app = a.initializeApp(FB_CONFIG), db = c.getDatabase(app), auth = b.getAuth(app);
+    await auth.authStateReady();
+    const user = auth.currentUser || (await b.signInAnonymously(auth)).user;
+    fb = Object.assign({}, c, { db, uid: user.uid, off: 0, A: b, auth: b.getAuth(app) });
     c.onValue(c.ref(db, '.info/serverTimeOffset'), s => { fb.off = s.val() || 0; });
     return fb;
   }
@@ -1571,7 +1682,7 @@ const SPR = {
   function netShow(view) { netp.hidden = false; $n('nHome').hidden = view !== 'home'; $n('nRoom').hidden = view !== 'room'; netMsg(''); }
   function openNet(code) {
     netShow('home');
-    let name = ''; try { name = localStorage.getItem('pryatki_name') || ''; } catch (e) { /* no storage */ }
+    let name = prog.nick || ''; try { name = localStorage.getItem('pryatki_name') || name; } catch (e) { /* no storage */ }
     $n('nName').value = name;
     if (code) { $n('nCode').value = code; if (name) netEnter(code); else { netMsg('Напиши имя и нажми «Войти».'); $n('nName').focus(); } }
   }
@@ -1689,21 +1800,21 @@ const SPR = {
     for (const id in all) {
       if (fb && id === fb.uid) continue;
       const p = all[id], r = netRemote[id] || (netRemote[id] = { x: p.x, y: p.y });
-      r.tx = p.x; r.ty = p.y; r.face = p.f; r.moving = !!p.m; r.h = p.h; r.k = p.k; r.sm = p.sm; r.o = p.o; r.st = p.st; r.id = id;
+      r.tx = p.x; r.ty = p.y; r.face = p.f; r.moving = !!p.m; r.h = p.h; r.k = p.k; r.sm = p.sm; r.o = p.o; r.st = p.st; r.id = id; r.sk = p.sk;
     }
   }
   function netSend() {
-    const d = { x: Math.round(P.x), y: Math.round(P.y), f: P.face, m: P.moving ? 1 : 0, h: P.hidden ? SPOTS.indexOf(P.hidden) : -1, k: G.mode === 'hide' ? 0 : G.helper === 'kitten' ? 3 : G.helper ? 2 : 1, sm: G.smell >= 1 ? 1 : 0, o: G.home ? 1 : 0, st: P.stun > 0 ? 1 : 0 };
+    const d = { x: Math.round(P.x), y: Math.round(P.y), f: P.face, m: P.moving ? 1 : 0, h: P.hidden ? SPOTS.indexOf(P.hidden) : -1, k: G.mode === 'hide' ? 0 : G.helper === 'kitten' ? 3 : G.helper ? 2 : 1, sm: G.smell >= 1 ? 1 : 0, o: G.home ? 1 : 0, st: P.stun > 0 ? 1 : 0, sk: mySkin(G.mode === 'hide' || G.helper === 'kitten' ? 'cat' : 'dog') };
     const s = JSON.stringify(d);
     if (s !== room.last) { room.last = s; fb.set(rref('pos/' + fb.uid), d); }
   }
   function netEmit(e) { if (room) { e.from = fb.uid; fb.push(rref('ev'), e); } }
   function netEvent(e) {
     if (!G || !G.net || !e) return;
-    if (e.k === 'trap') { if (e.from !== fb.uid && !G.traps.some(q => q.id === e.id)) G.traps.push({ x: e.x, y: e.y, k: e.kind, t: 2, dodged: false, id: e.id }); }
+    if (e.k === 'trap') { if (e.from !== fb.uid && !G.traps.some(q => q.id === e.id)) G.traps.push({ x: e.x, y: e.y, k: e.kind, t: 2, dodged: false, id: e.id, owner: e.from }); else { const own = G.traps.find(q => q.id === e.id); if (own) own.owner = e.from; } }
     else if (e.k === 'decoy') { const s = SPOTS[e.s]; if (s && !G.decoys.includes(s)) G.decoys.push(s); }
     else if (e.k === 'eat') { G.decoys = G.decoys.filter(s => s !== SPOTS[e.s]); }
-    else if (e.k === 'trip') { G.traps = G.traps.filter(q => q.id !== e.id); }
+    else if (e.k === 'trip') { const q0 = G.traps.find(q => q.id === e.id); if (q0 && q0.owner === fb.uid && e.from !== fb.uid) earn(2); G.traps = G.traps.filter(q => q.id !== e.id); }
     else if (e.k === 'noise' && e.from !== fb.uid) {
       G.floats.push({ x: e.x, y: e.y - 26, s: e.s, t: 1.2 });
       if (P.hidden && /Фу|Ай|Игрушка|Косточка/.test(e.s)) G.watch = 2.6;
@@ -1869,12 +1980,18 @@ const SPR = {
       return { name: g.names[id], role, pts, me: id === fb.uid };
     }).sort((a, b) => b.pts - a.pts);
     const survived = murkas.some(id => !room.found[id] || room.found[id].home);
+    const fair = seekers.some(here) && murkas.some(here) && !netRemote.bot, mine = g.roles[fb.uid], myF = room.found[fb.uid];
+    const won = mine === 'murka' ? (!myF || !!myF.home) : !survived;
+    const coins = (won ? 20 : 5) + dailyBonus(), delta = fair ? (won ? 25 : -10) : 0;
+    prog.rating = Math.max(0, prog.rating + delta); prog.games++; if (won) prog.wins++;
+    earn(coins);
     sfx.win();
-    R = { net: true, rows, msg: !murkas.some(here) ? 'Все Мурки вышли из игры' : survived ? 'Мурки выиграли!' : 'Йода нашёл всех!' };
+    R = { net: true, reward: '+' + coins + ' монет' + (delta ? ', рейтинг ' + (delta > 0 ? '+' : '') + delta : ''), rows, msg: !murkas.some(here) ? 'Все Мурки вышли из игры' : survived ? 'Мурки выиграли!' : 'Йода нашёл всех!' };
     scr = 'result'; syncAct();
   }
   function drawNetResult(x, y, w) {
-    text(R.msg, x + w / 2, y + 44, 48, '#2f7d4f');
+    text(R.msg, x + w / 2, y + 40, 44, '#2f7d4f');
+    if (R.reward) text(R.reward, x + w / 2, y + 74, 21, '#b8860b');
     R.rows.forEach((r, i) => {
       const ry = y + 86 + i * 50;
       rr(x + 30, ry, w - 60, 44, 10); sf(r.me ? '#f6d9b8' : '#fff', 2);
@@ -1893,8 +2010,8 @@ const SPR = {
   }
   function netToRoom() { R = null; scr = 'menu'; syncAct(); if (room) { netShow('room'); netRender(); } else netp.hidden = true; }
   function drawSeekerSelf(counting) {
-    if (G.helper === 'kitten') drawCat(P.x, P.y, P.face, P.moving, P.stun > 0 ? 'dizzy' : 'calm', 0.4);
-    else drawDog(P.x, P.y, P.face, P.moving, counting ? 'sleep' : P.stun > 0 ? 'dizzy' : 'walk', G.helper ? 0.36 : 0.5);
+    if (G.helper === 'kitten') drawCat(P.x, P.y, P.face, P.moving, P.stun > 0 ? 'dizzy' : 'calm', 0.4, mySkin('cat'));
+    else drawDog(P.x, P.y, P.face, P.moving, counting ? 'sleep' : P.stun > 0 ? 'dizzy' : 'walk', G.helper ? 0.36 : 0.5, mySkin('dog'));
   }
   function netEntities(ent, seen) {
     if (G.mode === 'seek') G.traps.forEach(q => { if (q.k === 'toy' && seen(q.x, q.y)) ctx.drawImage(hazard('ball'), q.x - 30, q.y - 25 + Math.sin(clock * 12) * 3, 60, 50); });
@@ -1904,9 +2021,9 @@ const SPR = {
       const name = r.id === 'bot' ? 'Йода-бот' : room.game && room.game.names[r.id];
       ent(r, () => {
         shadow(r.x, r.y, r.k === 1 ? 24 : 18);
-        if (r.k === 0) drawCat(r.x, r.y, r.face, r.moving, r.st ? 'dizzy' : 'calm');
-        else if (r.k === 3) drawCat(r.x, r.y, r.face, r.moving, r.st ? 'dizzy' : 'calm', 0.4);
-        else drawDog(r.x, r.y, r.face, r.moving, r.st ? 'dizzy' : G.phase === 'count' ? 'sleep' : 'walk', r.k === 2 ? 0.36 : 0.5);
+        if (r.k === 0) drawCat(r.x, r.y, r.face, r.moving, r.st ? 'dizzy' : 'calm', 0.55, r.sk);
+        else if (r.k === 3) drawCat(r.x, r.y, r.face, r.moving, r.st ? 'dizzy' : 'calm', 0.4, r.sk);
+        else drawDog(r.x, r.y, r.face, r.moving, r.st ? 'dizzy' : G.phase === 'count' ? 'sleep' : 'walk', r.k === 2 ? 0.36 : 0.5, r.sk);
         if (name) outlined(name, r.x, r.y - 56, 20, r.k ? '#9a3b2a' : '#7a3e8e');
       });
     });
@@ -1920,6 +2037,95 @@ const SPR = {
       [-7, 7].forEach(o => { ctx.beginPath(); ctx.ellipse(c.x + o, c.y, 5, 6, 0, 0, 7); ctx.fillStyle = '#e8d36a'; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = INK; ctx.stroke(); });
     });
   }
+  $n('nSkin').addEventListener('click', openShop);
+  let syncT = null;
+  function netSync() {
+    if (!fb) return;
+    clearTimeout(syncT);
+    syncT = setTimeout(() => {
+      fb.set(fb.ref(fb.db, 'profiles/' + fb.uid), prog).catch(() => {});
+      if (prog.nick) fb.set(fb.ref(fb.db, 'top/' + fb.uid), { nick: prog.nick, rating: prog.rating }).catch(() => {});
+    }, 1200);
+  }
+  let shopTab = 'cat';
+  function openShop() { $n('shop').hidden = false; shopTab = G && scr === 'play' && G.mode === 'seek' && G.helper !== 'kitten' ? 'dog' : shopTab; shopRender(); }
+  function shopRender() {
+    $n('shopCoins').textContent = 'Монет: ' + prog.coins;
+    $n('tabCat').classList.toggle('sel', shopTab === 'cat'); $n('tabDog').classList.toggle('sel', shopTab === 'dog');
+    const grid = $n('shopGrid'), myRank = rankOf(prog.rating); grid.textContent = '';
+    SKINS[shopTab].forEach(s => {
+      const card = document.createElement('div'), c = document.createElement('canvas'), b = document.createElement('b'), btn = document.createElement('button');
+      const owned = !!prog.owned[s.id], on = prog.skin[shopTab] === s.id;
+      card.className = 'sk' + (on ? ' on' : ''); c.width = c.height = 96; b.textContent = s.n; btn.type = 'button';
+      const keep = ctx; ctx = c.getContext('2d'); toon(shopTab, shopTab === 'cat' ? 40 : 34, 76, 1, false, shopTab === 'cat' ? 'calm' : 'walk', shopTab === 'cat' ? 0.58 : 0.5, s.id); ctx = keep;
+      if (on) { btn.textContent = 'Надето'; btn.disabled = true; }
+      else if (owned) { btn.textContent = 'Надеть'; btn.onclick = () => { prog.skin[shopTab] = s.id; saveBest(); netSync(); shopRender(); }; }
+      else if (s.rank) {
+        const ok = myRank >= s.rank; btn.textContent = ok ? 'Забрать' : 'Ранг: ' + RANKS[s.rank][0]; btn.disabled = !ok;
+        if (ok) btn.onclick = () => { prog.owned[s.id] = 1; prog.skin[shopTab] = s.id; saveBest(); netSync(); shopRender(); };
+      } else {
+        btn.textContent = 'Купить ' + s.price; btn.disabled = prog.coins < s.price;
+        btn.onclick = () => { if (prog.coins < s.price) return; prog.coins -= s.price; prog.owned[s.id] = 1; prog.skin[shopTab] = s.id; saveBest(); netSync(); shopRender(); };
+      }
+      card.append(c, b, btn); grid.appendChild(card);
+    });
+  }
+  $n('tabCat').addEventListener('click', () => { shopTab = 'cat'; shopRender(); });
+  $n('tabDog').addEventListener('click', () => { shopTab = 'dog'; shopRender(); });
+  $n('shopClose').addEventListener('click', () => { $n('shop').hidden = true; });
+  function rMsg(s) { $n('rMsg').textContent = s; }
+  async function openRank() {
+    $n('rankp').hidden = false; rRender(); rMsg('Загружаю…'); $n('rList').textContent = '';
+    try {
+      await netBoot(); netSync();
+      const s = await fb.get(fb.query(fb.ref(fb.db, 'top'), fb.orderByChild('rating'), fb.limitToLast(20))), rows = [];
+      s.forEach(ch => { rows.push(Object.assign({ id: ch.key }, ch.val())); });
+      rows.reverse(); rMsg(rows.length ? '' : 'Пока никого нет. Будь первым!');
+      const ul = $n('rList'); ul.textContent = '';
+      rows.forEach((r, i) => { const li = document.createElement('li'), a = document.createElement('span'), b = document.createElement('span'); a.textContent = (i + 1) + '. ' + r.nick + ' · ' + RANKS[rankOf(r.rating)][0]; b.textContent = r.rating; if (r.id === fb.uid) li.className = 'me'; li.append(a, b); ul.appendChild(li); });
+    } catch (e) { rMsg('Нет связи: ' + (e.code || e.message)); }
+  }
+  function rRender() {
+    $n('rMine').textContent = RANKS[rankOf(prog.rating)][0] + ' · ' + prog.rating;
+    $n('rForm').style.display = prog.nick ? 'none' : 'flex';
+  }
+  const BAD_NICK = /хуй|пизд|ебан|ебат|бля|сука|fuck|shit/i;
+  function nickParts() {
+    const nick = $n('pNick').value.trim(), pin = $n('pPin').value.trim();
+    if (!/^[а-яёА-ЯЁa-zA-Z0-9_-]{3,12}$/.test(nick)) { rMsg('Ник: от 3 до 12 букв или цифр.'); return null; }
+    if (BAD_NICK.test(nick)) { rMsg('Придумай другой ник.'); return null; }
+    if (!/^\d{6}$/.test(pin)) { rMsg('PIN: ровно 6 цифр.'); return null; }
+    const key = nick.toLowerCase(), email = [...new TextEncoder().encode(key)].map(b => b.toString(16).padStart(2, '0')).join('') + '@pryatki.app';
+    return { nick, pin, key, email };
+  }
+  async function profileNew() {
+    const q = nickParts(); if (!q) return;
+    if (room) { rMsg('Сначала выйди из комнаты.'); return; }
+    rMsg('Создаю…');
+    try {
+      await netBoot();
+      if ((await fb.get(fb.ref(fb.db, 'nicks/' + q.key))).exists()) { rMsg('Такой ник уже занят.'); return; }
+      await fb.A.linkWithCredential(fb.auth.currentUser, fb.A.EmailAuthProvider.credential(q.email, q.pin));
+      await fb.set(fb.ref(fb.db, 'nicks/' + q.key), fb.uid);
+      prog.nick = q.nick; saveBest(); netSync(); $n('pPin').value = ''; openRank();
+    } catch (e) { rMsg(e.code === 'auth/email-already-in-use' ? 'Такой ник уже занят.' : 'Не получилось: ' + (e.code || e.message)); }
+  }
+  async function profileIn() {
+    const q = nickParts(); if (!q) return;
+    if (room) { rMsg('Сначала выйди из комнаты.'); return; }
+    rMsg('Вхожу…');
+    try {
+      await netBoot();
+      const u = (await fb.A.signInWithEmailAndPassword(fb.auth, q.email, q.pin)).user;
+      fb.uid = u.uid;
+      const v = (await fb.get(fb.ref(fb.db, 'profiles/' + u.uid))).val();
+      if (v) { prog.coins = Math.max(prog.coins, v.coins || 0); prog.rating = Math.max(prog.rating, v.rating || 0); prog.games = Math.max(prog.games, v.games || 0); prog.wins = Math.max(prog.wins, v.wins || 0); Object.assign(prog.owned, v.owned || {}); if (v.skin) prog.skin = v.skin; }
+      prog.nick = q.nick; saveBest(); netSync(); $n('pPin').value = ''; openRank();
+    } catch (e) { rMsg(/wrong-password|invalid-credential|user-not-found/.test(e.code || '') ? 'Неверный ник или PIN.' : 'Не получилось: ' + (e.code || e.message)); }
+  }
+  $n('pNew').addEventListener('click', profileNew);
+  $n('pIn').addEventListener('click', profileIn);
+  $n('rClose').addEventListener('click', () => { $n('rankp').hidden = true; });
   $n('nCreate').addEventListener('click', netCreate);
   $n('nJoin').addEventListener('click', () => netEnter());
   $n('nCode').addEventListener('keydown', e => { if (e.key === 'Enter') netEnter(); });
@@ -1935,10 +2141,13 @@ const SPR = {
   });
 
   // ---------- loop ----------
-  let last = performance.now();
+  let last = performance.now(), fAvg = 1 / 60, fCount = 0, fSkip = false;
   function frame(now) {
-    const dt = Math.min(0.1, (now - last) / 1000); last = now;
-    update(dt); draw();
+    const raw = (now - last) / 1000, dt = Math.min(0.1, raw); last = now;
+    update(dt);
+    if (raw < 0.25) { fAvg += (raw - fAvg) * 0.02; if (++fCount > 150 && ui.q === 'auto' && !autoLow && fAvg > 0.03) { autoLow = true; setQual(); } }
+    fSkip = lowQ && !fSkip;
+    if (!fSkip) draw();
     requestAnimationFrame(frame);
   }
   syncAct();
@@ -1946,7 +2155,7 @@ const SPR = {
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(refreshCaches);
   requestAnimationFrame(frame);
   { const q = new URLSearchParams(location.search).get('room'); if (q && /^\d{4}$/.test(q)) openNet(q); }
-  if (location.hash === '#test') window.__pr = { get G() { return G; }, get R() { return R; }, get scr() { return scr; }, netBotTick, P, Y, M, cam, get zoom() { return zoom; }, LEVELS, SPOTS, start, spotAction, useItem, trip, toggleView, get pocket() { return pocket; }, get claimed() { return claimed; }, get fearStage() { return fearStage; }, get room() { return room; }, get fb() { return fb; }, netRemote, netStart, netEnter, netCreate, netLeave, openNet, netTick, netSniff, netEmit, update, draw, hideIn, unhide, sniffAt, bfs, adj, tileOf, BASE, blocked, FURN };
+  if (location.hash === '#test') window.__pr = { get G() { return G; }, get R() { return R; }, get scr() { return scr; }, netBotTick, P, Y, M, cam, get zoom() { return zoom; }, LEVELS, SPOTS, start, spotAction, useItem, trip, toggleView, get pocket() { return pocket; }, get claimed() { return claimed; }, get fearStage() { return fearStage; }, get room() { return room; }, get fb() { return fb; }, prog, SKINS, rankOf, earn, openShop, openRank, get Q() { return Q; }, setAuto(v) { autoLow = v; setQual(); }, netSync, netRemote, netStart, netEnter, netCreate, netLeave, openNet, netTick, netSniff, netEmit, update, draw, hideIn, unhide, sniffAt, bfs, adj, tileOf, BASE, blocked, FURN };
 })();
 </script>
 </html>

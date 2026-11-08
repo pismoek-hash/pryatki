@@ -1544,6 +1544,7 @@ const SPR = {
     if (!room) { netp.hidden = true; return; }
     room.subs.concat(room.gameSubs).forEach(u => u());
     fb.remove(rref('players/' + fb.uid)); fb.remove(rref('pos/' + fb.uid));
+    if (room.bot) fb.remove(rref('pos/bot'));
     fb.onDisconnect(rref('players/' + fb.uid)).cancel(); fb.onDisconnect(rref('pos/' + fb.uid)).cancel();
     room = null; Object.keys(netRemote).forEach(k => delete netRemote[k]);
     netp.hidden = true;
@@ -1575,7 +1576,7 @@ const SPR = {
     const roles = {}, names = {};
     list.forEach((id, i) => { roles[id] = i === first || (dogs === 2 && i === (first + 1) % n) ? 'yoda' : 'murka'; names[id] = room.roster[id].name; });
     const auto = timesFor(n, dogs), count = +$n('nHide').value || auto[0], time = +$n('nSeek').value || auto[1];
-    await fb.remove(rref('ev')); await fb.remove(rref('found'));
+    await fb.remove(rref('ev')); await fb.remove(rref('found')); await fb.remove(rref('pos/bot'));
     await fb.set(rref('game'), { id: Date.now().toString(36), seed: Math.floor(Math.random() * 2147483647), startAt: serverNow() + 2500, count, time, lv: +$n('nLv').value, roles, names, helper: $n('nHelper').value, round, first });
   }
   function netGame(g) {
@@ -1583,9 +1584,11 @@ const SPR = {
     if (serverNow() > g.startAt + (g.count + g.time) * 1000) return;
     room.game = g; room.gid = g.id; room.found = {}; room.ended = false;
     room.gameSubs.forEach(u => u()); room.gameSubs = [];
+    const botWas = netRemote.bot && netRemote.bot.tx !== undefined ? { x: netRemote.bot.tx, y: netRemote.bot.ty } : null;
     Object.keys(netRemote).forEach(k => delete netRemote[k]);
     const murkas = Object.keys(g.roles).filter(id => g.roles[id] === 'murka').sort();
     start(g.roles[fb.uid] === 'yoda' ? 'seek' : 'hide', g.lv, { seed: g.seed, count: g.count, time: g.time, murkas: murkas.length, idx: Math.max(0, murkas.indexOf(fb.uid)) });
+    if (botWas && g.roles[fb.uid] === 'yoda') { P.x = botWas.x; P.y = botWas.y; say('Ты вернулся! Продолжай искать.', 2.4); }
     netp.hidden = true;
     room.sendT = 0; room.last = '';
     room.gameSubs.push(fb.onChildAdded(rref('ev'), s => netEvent(s.val())));
@@ -1652,6 +1655,69 @@ const SPR = {
     if (hit.length) { hit.forEach(r => netFind(r.id)); return; }
     G.marks.set(s, 10); sfx.empty(); say('Тут пусто…', 1);
   }
+  function netBotTargets() {
+    const out = [];
+    if (G.mode === 'hide' && !G.home && !room.found[fb.uid]) out.push({ id: fb.uid, x: P.x, y: P.y, h: P.hidden ? SPOTS.indexOf(P.hidden) : -1, sm: G.smell >= 1 });
+    Object.values(netRemote).forEach(r => { if (r.tx !== undefined && !r.k && !r.o && !room.found[r.id]) out.push({ id: r.id, x: r.x, y: r.y, h: r.h, sm: !!r.sm }); });
+    return out;
+  }
+  function netBotFind(id) {
+    if (room.found[id]) return;
+    room.found[id] = { by: 'bot', t: serverNow() };
+    fb.set(rref('found/' + id), room.found[id]); sfx.bark();
+  }
+  function netBotNext(b) {
+    const from = tileOf(b);
+    let pick = G.decoys[0] || null;
+    if (!pick) { const s = netBotTargets().find(q => q.h >= 0 && q.sm); if (s) pick = SPOTS[s.h]; }
+    if (!pick) pick = SPOTS.map(s => ({ s, d: (bfs(from, adj(s)) || []).length + Math.random() * L.noise + (b.seen.get(s) > G.t - 20 ? 60 : 0) })).sort((p, q) => p.d - q.d)[0].s;
+    b.target = pick; b.path = bfs(from, adj(pick)) || []; b.sniff = false;
+  }
+  function netBotTick(dt) {
+    const g = room.game, on = !Object.keys(g.roles).some(id => g.roles[id] === 'yoda' && room.roster[id]);
+    if (!on) { if (room.bot) { room.bot = null; fb.remove(rref('pos/bot')); } return; }
+    if (!isHost()) { room.bot = null; return; }
+    if (G.phase !== 'go') return;
+    if (!room.bot) {
+      const o = netRemote.bot;
+      room.bot = { x: o && o.tx !== undefined ? o.tx : BASE.x, y: o && o.ty !== undefined ? o.ty : BASE.y, face: 1, dx: 1, dy: 0, path: null, target: null, sniff: false, pause: 0, send: 0, repath: 0, seen: new Map() };
+      fb.onDisconnect(rref('pos/bot')).remove();
+      say('Йода вышел. Пока ищет бот.', 2.4);
+    }
+    const b = room.bot, targets = netBotTargets();
+    b.send -= dt;
+    if (b.send <= 0) { b.send = 0.125; fb.set(rref('pos/bot'), { x: Math.round(b.x), y: Math.round(b.y), f: b.face, m: b.path && b.path.length ? 1 : 0, h: -1, k: 1, sm: 0, o: 0, st: b.pause > 0 && !b.sniff ? 1 : 0 }); }
+    if (b.pause > 0) {
+      b.pause -= dt;
+      if (b.pause > 0 || !b.sniff) return;
+      b.sniff = false;
+      const s = b.target, i = SPOTS.indexOf(s);
+      if (G.decoys.includes(s)) {
+        G.decoys = G.decoys.filter(q => q !== s); netEmit({ k: 'eat', s: i }); netEmit({ k: 'noise', x: Math.round(b.x), y: Math.round(b.y), s: 'Косточка!' });
+        b.pause = L.gnaw; b.target = null; return;
+      }
+      targets.filter(q => q.h === i).forEach(q => netBotFind(q.id));
+      b.seen.set(s, G.t); b.target = null;
+    }
+    const tr = G.traps.find(q => q.t <= 0 && dist(q, b) < 32);
+    if (tr) {
+      G.traps = G.traps.filter(q => q !== tr); netEmit({ k: 'trip', id: tr.id });
+      const word = tr.k === 'poop' ? 'Фу-у-у!' : tr.k === 'pin' ? 'Ай-ай-ай!' : 'Игрушка!';
+      netEmit({ k: 'noise', x: Math.round(b.x), y: Math.round(b.y), s: word });
+      b.pause = tr.k === 'poop' ? 4 : tr.k === 'pin' ? 1.1 : 3; b.path = null; b.target = null; return;
+    }
+    const open = targets.filter(q => q.h < 0);
+    const close = open.find(q => dist(q, b) < 34);
+    if (close) { netBotFind(close.id); return; }
+    const seen = open.find(q => dist(q, b) < L.R && los(b, q));
+    if (seen) {
+      b.repath -= dt; if (b.repath <= 0) { b.repath = 0.25; b.path = bfs(tileOf(b), toTile(tileOf(seen))) || []; b.target = null; }
+      follow(b, L.chase, dt); return;
+    }
+    if (b.path && b.path.length) { follow(b, L.ys, dt); return; }
+    if (b.target) { b.pause = L.sniff; b.sniff = true; return; }
+    netBotNext(b);
+  }
   function netTrip(t) {
     G.traps = G.traps.filter(q => q !== t); netEmit({ k: 'trip', id: t.id });
     P.path = null; P.arrive = null;
@@ -1662,6 +1728,7 @@ const SPR = {
   }
   function netTick(dt) {
     room.sendT -= dt; if (room.sendT <= 0) { room.sendT = 0.125; netSend(); }
+    netBotTick(dt);
     const k = Math.min(1, dt * 12), list = Object.values(netRemote);
     list.forEach(r => { r.x += (r.tx - r.x) * k; r.y += (r.ty - r.y) * k; });
     if (G.mode === 'hide') {
@@ -1693,8 +1760,9 @@ const SPR = {
     const g = room.game, ids = Object.keys(g.roles), here = id => !!room.roster[id];
     const murkas = ids.filter(id => g.roles[id] === 'murka'), seekers = ids.filter(id => g.roles[id] === 'yoda');
     const seekersGone = !seekers.some(here), left = murkas.filter(id => here(id) && !room.found[id]);
-    if (G.time > 0 && left.length && !seekersGone) return;
+    if (G.time > 0 && left.length) return;
     room.ended = true;
+    if (room.bot) { room.bot = null; fb.remove(rref('pos/bot')); }
     const goAt = g.startAt + g.count * 1000, rows = ids.filter(here).map(id => {
       const f = room.found[id];
       let pts = 0, role;
@@ -1712,7 +1780,7 @@ const SPR = {
     }).sort((a, b) => b.pts - a.pts);
     const survived = murkas.some(id => !room.found[id] || room.found[id].home);
     sfx.win();
-    R = { net: true, rows, msg: seekersGone ? 'Йода вышел из игры' : !murkas.some(here) ? 'Все Мурки вышли из игры' : survived ? 'Мурки выиграли!' : 'Йода нашёл всех!' };
+    R = { net: true, rows, msg: !murkas.some(here) ? 'Все Мурки вышли из игры' : survived ? 'Мурки выиграли!' : 'Йода нашёл всех!' };
     scr = 'result'; syncAct();
   }
   function drawNetResult(x, y, w) {
@@ -1743,7 +1811,7 @@ const SPR = {
     Object.values(netRemote).forEach(r => {
       if (r.tx === undefined || !seen(r.x, r.y) || r.o) return;
       if (r.h >= 0) return;
-      const name = room.game && room.game.names[r.id];
+      const name = r.id === 'bot' ? 'Йода-бот' : room.game && room.game.names[r.id];
       ent(r, () => {
         shadow(r.x, r.y, r.k === 1 ? 24 : 18);
         if (r.k === 0) drawCat(r.x, r.y, r.face, r.moving, r.st ? 'dizzy' : 'calm');
@@ -1788,7 +1856,7 @@ const SPR = {
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(refreshCaches);
   requestAnimationFrame(frame);
   { const q = new URLSearchParams(location.search).get('room'); if (q && /^\d{4}$/.test(q)) openNet(q); }
-  if (location.hash === '#test') window.__pr = { get G() { return G; }, get R() { return R; }, get scr() { return scr; }, P, Y, M, cam, get zoom() { return zoom; }, LEVELS, SPOTS, start, spotAction, useItem, trip, toggleView, get pocket() { return pocket; }, get claimed() { return claimed; }, get fearStage() { return fearStage; }, get room() { return room; }, get fb() { return fb; }, netRemote, netStart, netEnter, netCreate, netLeave, openNet, netTick, netSniff, netEmit, update, draw, hideIn, unhide, sniffAt, bfs, adj, tileOf, BASE, blocked, FURN };
+  if (location.hash === '#test') window.__pr = { get G() { return G; }, get R() { return R; }, get scr() { return scr; }, netBotTick, P, Y, M, cam, get zoom() { return zoom; }, LEVELS, SPOTS, start, spotAction, useItem, trip, toggleView, get pocket() { return pocket; }, get claimed() { return claimed; }, get fearStage() { return fearStage; }, get room() { return room; }, get fb() { return fb; }, netRemote, netStart, netEnter, netCreate, netLeave, openNet, netTick, netSniff, netEmit, update, draw, hideIn, unhide, sniffAt, bfs, adj, tileOf, BASE, blocked, FURN };
 })();
 </script>
 </html>

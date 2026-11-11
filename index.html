@@ -1241,6 +1241,11 @@ const SPR = {
     else if (over === 'lava') { ctx.lineWidth = 4; ctx.strokeStyle = '#ff7a1f'; ctx.lineCap = 'round'; [[[-32, -56], [-20, -46], [-26, -36]], [[-6, -66], [2, -50], [-6, -40]], [[20, -58], [30, -44]], [[32, hy - 16], [40, hy - 6], [32, hy + 2]]].forEach(l => { ctx.beginPath(); l.forEach(([a, b], n) => n ? ctx.lineTo(a, b) : ctx.moveTo(a, b)); ctx.stroke(); }); }
   }
   const mySkin = kind => prog.skin[kind];
+  function nyFix() {
+    ['cat', 'dog'].forEach(k => SKINS[k].forEach(s => { if (s.toys && prog.owned[s.id] && !(prog.nyBought || []).includes(s.id)) delete prog.owned[s.id]; }));
+    ['cat', 'dog'].forEach(k => { if (!prog.owned[prog.skin[k]]) prog.skin[k] = SKINS[k][0].id; });
+  }
+  nyFix();
   function drawBone(x, y, a, s) { ctx.save(); ctx.translate(x, y); ctx.rotate(a); sprite('bone', 0, 0, Math.round(80 * s)); ctx.restore(); }
   const hazImg = {};
   function hazard(kind, col) {
@@ -2239,16 +2244,16 @@ const SPR = {
     const grid = $n('shopGrid'), myRank = rankOf(prog.rating); grid.textContent = '';
     $n('shopAdv').hidden = !season();
     SKINS[shopTab].forEach(s => {
-      if (s.toys && !season() && !prog.owned[s.id]) return;
       const card = document.createElement('div'), c = document.createElement('canvas'), b = document.createElement('b'), btn = document.createElement('button');
       const owned = !!prog.owned[s.id], on = prog.skin[shopTab] === s.id;
       card.className = 'sk' + (on ? ' on' : ''); c.width = c.height = 96; b.textContent = s.n; btn.type = 'button';
       const keep = ctx; ctx = c.getContext('2d'); toon(shopTab, shopTab === 'cat' ? 40 : 34, 76, 1, false, shopTab === 'cat' ? 'calm' : 'walk', shopTab === 'cat' ? 0.58 : 0.5, s.id); ctx = keep;
       if (on) { btn.textContent = 'Надето'; btn.disabled = true; }
       else if (owned) { btn.textContent = 'Надеть'; btn.onclick = () => { prog.skin[shopTab] = s.id; saveBest(); netSync(); shopRender(); }; }
+      else if (s.toys && !season()) { btn.textContent = 'Откроется 1 декабря'; btn.disabled = true; btn.classList.add('advbtn'); }
       else if (s.toys) {
         btn.textContent = s.price + ' игрушек'; btn.disabled = prog.toys < s.price; btn.classList.add('advbtn');
-        btn.onclick = () => { if (prog.toys < s.price) return; prog.toys -= s.price; prog.owned[s.id] = 1; prog.skin[shopTab] = s.id; saveBest(); netSync(); shopRender(); };
+        btn.onclick = () => { if (prog.toys < s.price) return; prog.toys -= s.price; prog.owned[s.id] = 1; prog.nyBought = (prog.nyBought || []).concat(s.id); prog.skin[shopTab] = s.id; saveBest(); netSync(); shopRender(); };
       }
       else if (s.rank) {
         const ok = myRank >= s.rank; btn.textContent = ok ? 'Забрать' : 'Ранг: ' + RANKS[s.rank][0]; btn.disabled = !ok;
@@ -2341,7 +2346,7 @@ const SPR = {
       const u = (await fb.A.signInWithEmailAndPassword(fb.auth, q.email, q.pin)).user;
       fb.uid = u.uid;
       const v = (await fb.get(fb.ref(fb.db, 'profiles/' + u.uid))).val();
-      if (v) { prog.coins = Math.max(prog.coins, v.coins || 0); prog.toys = Math.max(prog.toys || 0, v.toys || 0); if (v.adv && v.adv.y >= (prog.adv.y || 0)) prog.adv = { y: v.adv.y, d: Array.from(new Set([...(v.adv.y === prog.adv.y ? prog.adv.d : []), ...(v.adv.d || [])])) }; prog.rating = Math.max(prog.rating, v.rating || 0); prog.games = Math.max(prog.games, v.games || 0); prog.wins = Math.max(prog.wins, v.wins || 0); Object.assign(prog.owned, v.owned || {}); if (v.skin) prog.skin = v.skin; }
+      if (v) { prog.coins = Math.max(prog.coins, v.coins || 0); prog.toys = Math.max(prog.toys || 0, v.toys || 0); if (v.adv && v.adv.y >= (prog.adv.y || 0)) prog.adv = { y: v.adv.y, d: Array.from(new Set([...(v.adv.y === prog.adv.y ? prog.adv.d : []), ...(v.adv.d || [])])) }; prog.rating = Math.max(prog.rating, v.rating || 0); prog.games = Math.max(prog.games, v.games || 0); prog.wins = Math.max(prog.wins, v.wins || 0); Object.assign(prog.owned, v.owned || {}); if (v.skin) prog.skin = v.skin; prog.nyBought = Array.from(new Set([...(prog.nyBought || []), ...(v.nyBought || [])])); nyFix(); }
       prog.nick = q.nick; saveBest(); netSync(); $n('pPin').value = ''; openRank();
     } catch (e) { rMsg(/wrong-password|invalid-credential|user-not-found/.test(e.code || '') ? 'Неверный ник или PIN.' : 'Не получилось: ' + (e.code || e.message)); }
   }

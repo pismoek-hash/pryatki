@@ -2,7 +2,8 @@
 <html lang="ru">
 <meta charset="utf-8">
 <title>Прятки</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" id="vpm" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -137,6 +138,7 @@ h2 { font-family: var(--display); font-size: 40px; font-weight: 700; margin: 0 0
 #rList li.me { background: #f6d9b8; }
 .rmsg { margin: 0; font-size: 15px; font-weight: 700; color: #9a3b2a; }
 .rmsg:empty { display: none; }
+html { touch-action: manipulation; -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 #joyZone { display: none; }
 :root { --u: 1; }
 html.landh, html.landh body { overflow: hidden; overscroll-behavior: none; height: 100%; }
@@ -144,8 +146,8 @@ body.land .wrap > *:not(#stage) { display: none; }
 body.land #stage { width: var(--vw, 100vw); height: var(--vh, 100dvh); touch-action: none; -webkit-user-select: none; user-select: none; }
 body.land .netp { touch-action: pan-y; }
 body.land .exit { display: none; }
-body.land.float.playing #joyZone { display: block; position: absolute; top: 36px; bottom: 0; left: 0; width: 50%; z-index: 1; touch-action: none; }
-body.land.float.lefty.playing #joyZone { left: auto; right: 0; }
+body.land.float.playing #joyZone { display: block; position: absolute; top: 36px; bottom: 0; left: calc(env(safe-area-inset-left, 0px) + 26px); width: calc(50% - 26px); z-index: 1; touch-action: none; }
+body.land.float.lefty.playing #joyZone { left: auto; right: calc(env(safe-area-inset-right, 0px) + 26px); }
 body.land .pad { position: absolute; inset: 0; display: block; padding: 0; pointer-events: none; z-index: 2; }
 body.land #joy { position: absolute; left: max(14px, env(safe-area-inset-left, 0px)); bottom: max(24px, env(safe-area-inset-bottom, 0px)); width: calc(118px * var(--u)); height: calc(118px * var(--u)); opacity: .5; box-shadow: none; }
 body.land.lefty #joy { left: auto; right: max(14px, env(safe-area-inset-right, 0px)); }
@@ -1567,7 +1569,7 @@ const SPR = {
     const key = label + on;
     if (key !== actLabel) { actLabel = key; bAct.textContent = label; bAct.classList.toggle('off', !on); }
     syncTools();
-    if (scr === 'play' !== bodyPlaying) { bodyPlaying = scr === 'play'; document.body.classList.toggle('playing', bodyPlaying); }
+    if (scr === 'play' !== bodyPlaying) { bodyPlaying = scr === 'play'; document.body.classList.toggle('playing', bodyPlaying); if (bodyPlaying) onPlayStart(); }
   }
   bAct.addEventListener('pointerdown', e => { e.preventDefault(); bAct.classList.add('on'); unlockSound(); doAction(); });
   ['pointerup', 'pointercancel', 'pointerleave'].forEach(n => bAct.addEventListener(n, () => bAct.classList.remove('on')));
@@ -1597,8 +1599,9 @@ const SPR = {
     joyId = e.pointerId; try { zone.setPointerCapture(joyId); } catch (x) { /* fine */ }
     const w = joyEl.offsetWidth, h = joyEl.offsetHeight;
     joyEl.style.right = 'auto'; joyEl.style.bottom = 'auto';
-    joyEl.style.left = Math.max(4, Math.min(innerWidth - w - 4, e.clientX - w / 2)) + 'px';
-    joyEl.style.top = Math.max(38, Math.min(innerHeight - h - 4, e.clientY - h / 2)) + 'px';
+    const sr = joyEl.offsetParent ? joyEl.offsetParent.getBoundingClientRect() : { left: 0, top: 0, width: innerWidth, height: innerHeight };
+    joyEl.style.left = Math.max(4, Math.min(sr.width - w - 4, e.clientX - sr.left - w / 2)) + 'px';
+    joyEl.style.top = Math.max(38, Math.min(sr.height - h - 4, e.clientY - sr.top - h / 2)) + 'px';
     joyEl.classList.add('active');
     zoneStart = { x: e.clientX, y: e.clientY, t: performance.now(), far: false };
     joyMove(e);
@@ -1634,8 +1637,18 @@ const SPR = {
     setQual();
     try { localStorage.setItem('pryatki_ui', JSON.stringify(ui)); } catch (e) { /* this visit only */ }
   }
+  const vpm = document.getElementById('vpm');
+  let unzooming = false;
+  function unzoom() {
+    // iOS ignores user-scalable=no for pinch; rewriting the tag snaps the page back to 1x
+    if (unzooming || !vpm) return; unzooming = true;
+    const c = vpm.content; vpm.content = c.replace('maximum-scale=1', 'maximum-scale=1.01');
+    setTimeout(() => { vpm.content = c; window.scrollTo(0, 0); unzooming = false; setTimeout(layout, 120); }, 60);
+  }
   function layout() {
-    const vv = window.visualViewport, vw = Math.round(vv ? vv.width : innerWidth), vh = Math.round(vv ? vv.height : innerHeight);
+    const vv = window.visualViewport, zoomed = vv && vv.scale > 1.02;
+    if (zoomed) unzoom();
+    const vw = Math.round(vv && !zoomed ? vv.width : innerWidth), vh = Math.round(vv && !zoomed ? vv.height : innerHeight);
     const land = isTouch() && vw > vh, root = document.documentElement;
     if (land !== cl.contains('land')) stickReset();
     cl.toggle('land', land); cl.toggle('fs', land || manualFs); root.classList.toggle('landh', land);
@@ -1648,7 +1661,25 @@ const SPR = {
   if (window.visualViewport) { visualViewport.addEventListener('resize', layout); visualViewport.addEventListener('scroll', layout); }
   // Safari would otherwise zoom or scroll the page under two thumbs
   const inPanel = e => e.target && e.target.closest && e.target.closest('.netp');
-  ['gesturestart', 'gesturechange', 'dblclick'].forEach(n => document.addEventListener(n, e => { if (cl.contains('land') && !inPanel(e)) e.preventDefault(); }, { passive: false }));
+  ['gesturestart', 'gesturechange', 'gestureend', 'dblclick'].forEach(n => document.addEventListener(n, e => { if (!inPanel(e)) e.preventDefault(); }, { passive: false }));
+  document.addEventListener('touchstart', e => { if (e.touches.length > 1 && cl.contains('land')) { const t = e.target; if (!(t && t.closest && t.closest('button, .it, #joy, #joyZone, canvas, .netp'))) e.preventDefault(); } }, { passive: false });
+  // a swipe from the screen edge is Safari's Back: keep the player in the game
+  const isIos = /iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const standalone = navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches);
+  let guarded = false, iosTold = false;
+  function guardBack() {
+    if (guarded || !history.pushState) return; guarded = true;
+    try { history.pushState({ pr: 1 }, ''); } catch (e) { guarded = false; }
+  }
+  addEventListener('popstate', () => {
+    if (guarded && cl.contains('land') && cl.contains('playing')) { try { history.pushState({ pr: 1 }, ''); } catch (e) { /* stay */ } say('Свайп от края экрана — это «Назад» в браузере. Игра на месте!', 2.6); stickReset(); }
+    else guarded = false;
+  });
+  function onPlayStart() {
+    if (!cl.contains('land')) return;
+    guardBack();
+    if (isIos && !standalone && !iosTold) { iosTold = true; say('Совет: «Поделиться» → «На экран Домой» — и панель Safari не будет мешать.', 3.5); }
+  }
   document.addEventListener('touchmove', e => { if (cl.contains('land') && !inPanel(e)) e.preventDefault(); }, { passive: false });
   document.addEventListener('visibilitychange', () => { if (document.hidden) stickReset(); if (actx) { if (document.hidden) actx.suspend(); else if (ui.mus !== 'off' || actx.state === 'suspended') actx.resume(); } });
   addEventListener('blur', stickReset);

@@ -209,7 +209,7 @@ body.land #bView.off { display: none; }
         <label>Джойстик<select id="sStick"><option value="float">Появляется под пальцем</option><option value="fixed">Всегда на месте</option></select></label>
         <label>Какой рукой удобнее нажимать<select id="sHand"><option value="right">Кнопки справа</option><option value="left">Кнопки слева (для левши)</option></select></label>
         <label>Размер кнопок<select id="sSize"><option value="1">Обычный</option><option value="1.25">Большой</option></select></label>
-        <label>Музыка<select id="sMus"><option value="on">Включена</option><option value="off">Выключена</option></select></label>
+        <label>Музыка<select id="sMus"><option value="on">Классика</option><option value="kids">Весёлые детские песенки</option><option value="off">Выключена</option></select></label>
         <label>Качество<select id="sQ"><option value="auto">Авто</option><option value="high">Высокое</option><option value="low">Экономное (для слабых телефонов)</option></select></label>
         <p style="margin:0;font-size:13px">На iPhone игра будет на весь экран без панели Safari, если нажать «Поделиться» и «На экран Домой».</p>
         <button type="button" id="sClose" class="go">Готово</button>
@@ -1716,9 +1716,22 @@ const SPR = {
     { n: 'Оффенбах, Канкан', bpm: 170, w: 'square', m: 'C5:2 D5 F5 E5 D5 G5:2 G5:2 G5 A5 E5 F5 D5:2 D5:2 D5 F5 E5 D5 C5 C6 B5 A5 G5 F5 E5 D5 C5:2', b: 'C3 G2 C3 G2' },
     { n: 'Моцарт, Турецкое рондо', bpm: 150, w: 'triangle', m: 'B4 A4 G#4 A4 C5:2 _ D5 C5 B4 C5 E5:2 _ F5 E5 D#5 E5 B5 A5 G#5 A5 B5 A5 G#5 A5 C6:2 A5 C6', b: 'A2 E2 A2 E2' },
   ];
+  const KIDS = [
+    { n: 'Мерцай, звёздочка', bpm: 120, w: 'triangle', m: 'C5:2 C5:2 G5:2 G5:2 A5:2 A5:2 G5:4 F5:2 F5:2 E5:2 E5:2 D5:2 D5:2 C5:4', b: 'C3 F2 F2 G2' },
+    { n: 'У Мэри был барашек', bpm: 130, w: 'square', m: 'E5:3 D5 C5:2 D5:2 E5:2 E5:2 E5:4 D5:2 D5:2 D5:4 E5:2 G5:2 G5:4 E5:3 D5 C5:2 D5:2 E5:2 E5:2 E5:2 E5:2 D5:2 D5:2 E5:2 D5:2 C5:8', b: 'C3 G2 C3 C3 C3 G2 G2 C3' },
+    { n: 'У старого Макдональда ферма', bpm: 140, w: 'triangle', m: 'C5:2 C5:2 C5:2 G4:2 A4:2 A4:2 G4:4 E5:2 E5:2 D5:2 D5:2 C5:6 _:2', b: 'C3 F2 G2 C3' },
+    { n: 'Лондонский мост', bpm: 130, w: 'square', m: 'G5:3 A5 G5:2 F5:2 E5:2 F5:2 G5:4 D5:2 E5:2 F5:4 E5:2 F5:2 G5:4 G5:3 A5 G5:2 F5:2 E5:2 F5:2 G5:4 D5:4 G5:4 E5:2 C5:6', b: 'C3 G2 G2 C3 C3 C3 G2 C3' },
+    { n: 'Братец Якоб', bpm: 130, w: 'triangle', m: 'C5:2 D5:2 E5:2 C5:2 C5:2 D5:2 E5:2 C5:2 E5:2 F5:2 G5:4 E5:2 F5:2 G5:4 G5 A5 G5 F5 E5:2 C5:2 G5 A5 G5 F5 E5:2 C5:2 C5:2 G4:2 C5:4 C5:2 G4:2 C5:4', b: 'C3 G2' },
+    { n: 'В лесу родилась ёлочка', bpm: 130, w: 'triangle', m: 'C5 A5 A5 G5 A5 F5 C5 C5 C5 A5 A5 A#5 G5 C6:3 C6 D5 D5 A#5 A#5 A5 G5 F5 C5 A5 A5 G5 A5 F5:3', b: 'F2 C3 A#2 F2' },
+    { n: 'Хоп! — выскочил хорёк', bpm: 150, w: 'square', m: 'C5:2 C5 D5:2 D5 E5 G5 E5 C5:2 _ C5:2 C5 D5:2 D5 E5:3 C5:2 _ C5:2 C5 D5:2 D5 E5 G5 E5 C5:2 _ A5:3 D5:2 F5 E5:3 C5:2 _', b: 'C3 G2 C3 G2' },
+    { n: 'Янки Дудл', bpm: 150, w: 'triangle', m: 'C5 C5 D5 E5 C5 E5 D5 G4 C5 C5 D5 E5 C5:2 B4:2 C5 C5 D5 E5 F5 E5 D5 C5 B4 G4 A4 B4 C5:2 C5:2', b: 'C3 G2 C3 G2' },
+    { n: 'Плыви, плыви, лодочка', bpm: 120, w: 'triangle', m: 'C5:3 C5:3 C5:2 D5 E5:3 E5:2 D5 E5:2 F5 G5:6 C6 C6 C6 G5 G5 G5 E5 E5 E5 C5 C5 C5 G5:2 F5 E5:2 D5 C5:6', b: 'C3 C3 C3 C3 G2 C3' },
+    { n: 'Бубенчики', bpm: 170, w: 'square', m: 'E5:2 E5:2 E5:4 E5:2 E5:2 E5:4 E5:2 G5:2 C5:3 D5 E5:8 F5:2 F5:2 F5:3 F5 F5:2 E5:2 E5:2 E5 E5 E5:2 D5:2 D5:2 E5:2 D5:4 G5:4', b: 'C3 C3 C3 C3 F2 C3 G2 G2' },
+    { n: 'Чижик-пыжик', bpm: 140, w: 'triangle', m: 'E5 C5 E5 C5 F5 E5 D5:2 G4 G4 G4 B4 D5:2 _:2 E5 C5 E5 C5 F5 E5 D5:2 G4 B4 D5 G4 C5:2 _:2', b: 'C3 G2 G2 C3' },
+  ];
   const SEMI = { C: 0, 'C#': 1, D: 2, 'D#': 3, E: 4, F: 5, 'F#': 6, G: 7, 'G#': 8, A: 9, 'A#': 10, B: 11 };
   const noteHz = s => { const m = /^([A-G]#?)(\d)$/.exec(s); return 440 * Math.pow(2, (SEMI[m[1]] + (+m[2] + 1) * 12 - 69) / 12); };
-  TUNES.forEach(q => {
+  TUNES.concat(KIDS).forEach(q => {
     q.seq = q.m.split(' ').map(tk => { const [n, len] = tk.split(':'); return { hz: n === '_' ? 0 : noteHz(n), len: +(len || 1) }; });
     q.bass = q.b.split(' ').map(noteHz);
   });
@@ -1737,10 +1750,10 @@ const SPR = {
     const want = on ? [1, 0.6, 0.28, 0.1][stage] : 0;
     if (Math.abs(want - mus.level) > 0.01) { mus.level += (want - mus.level) * 0.08; mus.gain.gain.setTargetAtTime(mus.level, now, 0.05); }
     if (!on) { mus.next = mus.bNext = mus.dNext = now + 0.1; mus.idx = -1; return; }
-    const idx = scr === 'play' && G ? G.lv : TUNES.length - 1;
-    if (idx !== mus.idx) { mus.idx = idx; mus.i = 0; mus.b = 0; mus.next = mus.bNext = now + 0.08; }
+    const set = ui.mus === 'kids' ? KIDS : TUNES, idx = scr === 'play' && G ? Math.min(G.lv, set.length - 1) : set.length - 1, key = ui.mus + idx;
+    if (key !== mus.idx) { mus.idx = key; mus.i = 0; mus.b = 0; mus.next = mus.bNext = now + 0.08; }
     if (mus.next < now - 0.4) { mus.next = mus.bNext = now + 0.05; }
-    const q = TUNES[idx], step = 60 / q.bpm / 2;
+    const q = set[idx], step = 60 / q.bpm / 2;
     while (mus.next < now + 0.22) {
       const n = q.seq[mus.i]; mus.i = (mus.i + 1) % q.seq.length;
       if (n.hz) musBlip(q.w, n.hz, mus.next, Math.min(0.9, step * n.len * 0.95), q.w === 'square' ? 0.028 : 0.06, mus.gain);

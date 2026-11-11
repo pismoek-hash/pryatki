@@ -132,6 +132,17 @@ h2 { font-family: var(--display); font-size: 40px; font-weight: 700; margin: 0 0
 .stabs { display: flex; gap: 8px; }
 .stabs button { flex: 1; }
 .stabs button.sel { background: #f2c14e; }
+.advcard { background: #eaf3fb; }
+.advbtn { background: #cfe6ff !important; font-size: 20px !important; min-height: 42px !important; }
+.advmsg { margin: 0; font-weight: 700; font-size: 15px; }
+.advgrid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
+.advgrid button { min-height: 46px !important; padding: 2px !important; font: 700 20px var(--display) !important; border-radius: 10px !important; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; }
+.advgrid button small { font: 700 11px var(--body); color: #3f6f9a; }
+.advgrid button.ready { background: #f2c14e !important; animation: advp 1s ease-in-out infinite alternate; }
+.advgrid button.done { background: #d4ecd9 !important; }
+.advgrid button.big { background: #f6d9b8; }
+.advgrid button:disabled { opacity: .55; }
+@keyframes advp { to { transform: scale(1.08); } }
 .toprow { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-weight: 800; }
 #rList { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
 #rList li { display: flex; justify-content: space-between; gap: 8px; background: #fff; border: 2px solid #2b2320; border-radius: 9px; padding: 3px 9px; font-weight: 700; overflow-wrap: anywhere; }
@@ -181,9 +192,18 @@ body.land #bView.off { display: none; }
     </div>
     <button type="button" id="bExit" class="exit" aria-label="Выйти из полного экрана">✕</button>
     <div id="joyZone" aria-hidden="true"></div>
+    <div class="netp" id="adv" hidden>
+      <div class="netcard advcard">
+        <div class="toprow"><h3>Новогодний календарь</h3><span id="advToys"></span></div>
+        <p id="advMsg" class="advmsg"></p>
+        <div class="advgrid" id="advGrid"></div>
+        <button type="button" id="advClose" class="go">Готово</button>
+      </div>
+    </div>
     <div class="netp" id="shop" hidden>
       <div class="netcard">
         <div class="toprow"><h3>Скины</h3><span id="shopCoins"></span></div>
+        <button type="button" id="shopAdv" class="advbtn">Новогодний календарь</button>
         <div class="stabs"><button type="button" id="tabCat">Мурка</button><button type="button" id="tabDog">Йода</button></div>
         <div class="sgrid" id="shopGrid"></div>
         <button type="button" id="shopClose" class="go">Готово</button>
@@ -275,7 +295,7 @@ body.land #bView.off { display: none; }
       <div class="rule"><b>Прячься за Мурку</b><p>Пока Йода считает, беги к мебели и прячься. Победа, если Йода устанет искать. А если выскочить и добежать до домика, будет лишняя звезда.</p></div>
       <div class="rule"><b>Пакости Мурки</b><p>Пока Йода считает, ищи косточку, кнопку и игрушку. Две съеденные вкусняшки дают одну какашку. Косточку прячь в мебель, остальное клади под ноги. Сама наступишь, сама виновата!</p></div>
       <div class="rule"><b>С друзьями</b><p>Создай комнату и отправь ссылку или код. Играть можно вдвоём, втроём или вчетвером. Найденная Мурка становится щенком или котёнком и ищет остальных.</p></div>
-      <div class="rule"><b>Монеты и скины</b><p>За победы и пакости даются монеты. В магазине по 10 скинов для Мурки и Йоды. Самые редкие открываются за рейтинг в игре с друзьями.</p></div>
+      <div class="rule"><b>Монеты и скины</b><p>За победы и пакости даются монеты, а на уровне «Новый год» — ёлочные игрушки. Новогодние скины стоят по 800 игрушек, ещё игрушки дарит новогодний календарь в декабре. В магазине по 10 скинов для Мурки и Йоды. Самые редкие открываются за рейтинг в игре с друзьями.</p></div>
       <div class="rule"><b>Карман</b><p>Всё, что осталось после победы, переходит на следующий уровень, но не больше 5 штук каждого. Проиграл, и карман вернётся как был.</p></div>
       <div class="rule"><b>Мурка дрожит</b><p>Чем ближе Йода, тем сильнее дыбом шерсть на портрете. В укрытии кнопка «На Йоду» покажет его вблизи.</p></div>
       <div class="rule"><b>Запах</b><p>Чем дольше Мурка сидит на одном месте, тем сильнее пахнет. Полоска заполнилась, значит Йода уже бежит сюда. Меняй укрытие!</p></div>
@@ -644,10 +664,12 @@ const SPR = {
   });
   const SAVE = 'pryatki_v2', emptyBest = () => LEVELS.map(() => 0);
   let best = { hide: emptyBest(), seek: emptyBest() }, menuDirty = true, pocket = { bone: 0, poop: 0, pin: 0, toy: 0 }, claimed = [];
-  const prog = { coins: 0, owned: { murka: 1, snow: 1, ginger: 1, yoda: 1, choco: 1, dalma: 1 }, skin: { cat: 'murka', dog: 'yoda' }, rating: 0, games: 0, wins: 0, day: '', nick: '' };
+  const prog = { coins: 0, owned: { murka: 1, snow: 1, ginger: 1, yoda: 1, choco: 1, dalma: 1 }, skin: { cat: 'murka', dog: 'yoda' }, rating: 0, games: 0, wins: 0, day: '', nick: '', toys: 0, adv: { y: 0, d: [] } };
   const RANKS = [['Котёнок', 0], ['Охотник', 100], ['Мастер пряток', 300], ['Легенда', 700]];
   const rankOf = r => { let i = 0; RANKS.forEach((q, n) => { if (r >= q[1]) i = n; }); return i; };
-  function earn(n) { prog.coins += n; saveBest(); netSync(); }
+  const season = () => { const n = new Date(), m = n.getMonth(); return /ny/.test(location.hash) || m === 11 || (m === 0 && n.getDate() <= 10); };
+  const nyNow = () => !!(G && LEVELS[G.lv] && LEVELS[G.lv].ny);
+  function earn(n) { if (nyNow()) { n *= 2; prog.toys += n; } else prog.coins += n; saveBest(); netSync(); return n; }
   function dailyBonus() { const d = new Date().toISOString().slice(0, 10); if (prog.day === d) return 0; prog.day = d; return 15; }
   const POCKET_MAX = 5;
   try { const s = JSON.parse(localStorage.getItem(SAVE)); if (s && s.hide && s.seek) { best = s; if (s.pocket) pocket = s.pocket; if (s.claimed) claimed = s.claimed; if (s.prog) Object.assign(prog, s.prog); } } catch (e) { /* first run or storage off */ }
@@ -743,7 +765,7 @@ const SPR = {
     if (win) { sfx.win();
       earned = 10 + stars * 5 + dailyBonus();
       if (best[G.mode][G.lv] === 0) prog.rating += 5;
-      prog.wins++; prog.games++; earn(earned);
+      prog.wins++; prog.games++; earned = earn(earned);
       if (G.mode === 'hide') {
         if (!claimed[G.lv]) { claimed[G.lv] = 1; pocket = Object.assign({}, G.pocket); }
         else Object.keys(pocket).forEach(k => { pocket[k] = Math.min(pocket[k], G.pocket[k]); });
@@ -751,7 +773,7 @@ const SPR = {
       }
       if (stars > best[G.mode][G.lv]) { best[G.mode][G.lv] = stars; saveBest(); } } else sfx.lose();
     if (!win) { prog.games++; saveBest(); }
-    R = { win, msg, stars: win ? stars : 0, mode: G.mode, lv: G.lv, earned };
+    R = { win, msg, stars: win ? stars : 0, mode: G.mode, lv: G.lv, earned, toys: nyNow() };
     scr = 'result'; syncAct();
   }
 
@@ -1178,8 +1200,8 @@ const SPR = {
       { id: 'pixel', n: 'Пиксельная', price: 400, pal: { fur: '#7fb9a8', cream: '#e7d36b', white: '#f0f0e6' }, over: 'pixel' },
       { id: 'galaxy', n: 'Галактика', price: 900, pal: { fur: '#2a2356', cream: '#4b3a8e', white: '#7a5cc4', eye: '#7fe8ff' }, over: 'stars' },
       { id: 'neon', n: 'Неон', rank: 2, pal: { fur: '#1d1d2b', cream: '#19f0c8', white: '#ff3fa4', eye: '#ffe14d' }, over: 'neon' },
-      { id: 'santacat', n: 'Новогодняя', gift: 1, over: 'hatC' },
-      { id: 'flake', n: 'Снежинка', price: 300, pal: { fur: '#dceefa', cream: '#b9dcf2', white: '#ffffff', eye: '#4a8fd6' }, over: 'flakes' },
+      { id: 'santacat', n: 'Новогодняя', price: 800, toys: 1, over: 'hatC' },
+      { id: 'flake', n: 'Снежинка', price: 800, toys: 1, pal: { fur: '#dceefa', cream: '#b9dcf2', white: '#ffffff', eye: '#4a8fd6' }, over: 'flakes' },
       { id: 'kingcat', n: 'Золотая корона', rank: 3, pal: { fur: '#e8b83a', cream: '#f6d675', white: '#fff0b8', eye: '#7a3e8e' }, over: 'crownC' },
     ],
     dog: [
@@ -1191,8 +1213,8 @@ const SPR = {
       { id: 'knight', n: 'Рыцарь', price: 400, pal: { fur: '#9aa3ad', tan: '#c8ced6', ear: '#7a838d', collar: '#d1495b' }, over: 'knight' },
       { id: 'robot', n: 'Робот', price: 900, pal: { fur: '#9fb2c2', tan: '#5fd0e0', ear: '#7a8fa0', collar: '#f2c14e' }, over: 'robot' },
       { id: 'lava', n: 'Лава', rank: 2, pal: { fur: '#2c1a17', tan: '#ff7a1f', ear: '#1c100e', collar: '#ffcf33' }, over: 'lava' },
-      { id: 'santadog', n: 'Дед Мороз', gift: 1, pal: { collar: '#d1495b' }, over: 'santa' },
-      { id: 'deer', n: 'Олень', price: 300, pal: { fur: '#8a5a34', tan: '#d9b48a', ear: '#6b4426', collar: '#3f9a5a', nose: '#e63946' }, over: 'deer' },
+      { id: 'santadog', n: 'Дед Мороз', price: 800, toys: 1, pal: { collar: '#d1495b' }, over: 'santa' },
+      { id: 'deer', n: 'Олень', price: 800, toys: 1, pal: { fur: '#8a5a34', tan: '#d9b48a', ear: '#6b4426', collar: '#3f9a5a', nose: '#e63946' }, over: 'deer' },
       { id: 'kingdog', n: 'Золотой чемпион', rank: 3, pal: { fur: '#e8b83a', tan: '#fff0b8', ear: '#c8962a', collar: '#7a3e8e' }, over: 'crownD' },
     ],
   };
@@ -1465,6 +1487,7 @@ const SPR = {
     else drawDog(x + 204, y + 158, 1, false, 'chase', 0.62);
     const r = 25, gap = 67, sx = x + w / 2 - gap * 2.5;
     LEVELS.forEach((l, i) => {
+      if (l.ny && !season()) return;
       const cx = i < 6 ? sx + gap * i : sx + gap / 2 + gap * (i - 6), cy = y + (i < 6 ? 228 : 330), open = i === 0 || l.ny || best[mode][i - 1] > 0, st = best[mode][i];
       ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); sf(open ? (l.ny ? '#cfe6ff' : l.dark ? '#d8cfe8' : l.n === 'Закат' ? '#f6c79a' : '#fff') : '#d7d0c5');
       if (l.ny && open) { const keep = cx; ctx.save(); ctx.translate(keep, cy + 2); ctx.beginPath(); ctx.moveTo(0, -19); ctx.lineTo(13, 2); ctx.lineTo(7, 2); ctx.lineTo(16, 14); ctx.lineTo(-16, 14); ctx.lineTo(-7, 2); ctx.lineTo(-13, 2); ctx.closePath(); sf('#3f9a5a', 2); ctx.restore(); }
@@ -1497,14 +1520,14 @@ const SPR = {
     rr(x, y, w, h, 22); sf('#fbf6ea', 4);
     text(R.win ? 'Победа!' : 'Ой!', x + w / 2, y + 48, 62, R.win ? '#2f7d4f' : '#9a3b2a');
     text(R.msg, x + w / 2, y + 108, 36, INK);
-    if (R.earned) outlined('+' + R.earned + ' монет', x + w - 90, y + 44, 30, '#b8860b');
+    if (R.earned) outlined('+' + R.earned + (R.toys ? ' игрушек' : ' монет'), x + w - 90, y + 44, 30, R.toys ? '#2f6fb0' : '#b8860b');
     if (R.win) [-1, 0, 1].forEach(q => star(x + w / 2 + q * 78, y + 180, 34, R.stars >= q + 2));
     else { ctx.save(); if (R.mode === 'hide') drawDog(x + w / 2 - 15, y + 240, 1, false, 'happy', 0.85); else drawCat(x + w / 2 - 10, y + 240, 1, false, 'angry', 0.95); ctx.restore(); }
     if (R.win && R.mode === 'hide') {
       text(R.stars === 3 ? 'Домик и все вкусняшки!' : 'Звёзды: домик и все вкусняшки', x + w / 2, y + 240, 25, '#5d5550');
     }
     if (R.win && R.mode === 'seek') text('Чем быстрее нашёл, тем больше звёзд', x + w / 2, y + 240, 25, '#5d5550');
-    const hasNext = R.win && R.lv < LEVELS.length - 1, bw = 170, gap = 14, count = hasNext ? 3 : 2;
+    const hasNext = R.win && R.lv < LEVELS.length - 1 && !(LEVELS[R.lv + 1].ny && !season()), bw = 170, gap = 14, count = hasNext ? 3 : 2;
     let bx = x + w / 2 - (count * bw + (count - 1) * gap) / 2;
     const by = y + 302, m = R.mode, l = R.lv;
     button(bx, by, bw, 62, 'Меню', () => { scr = 'menu'; R = null; syncAct(); }); bx += bw + gap;
@@ -1823,7 +1846,7 @@ const SPR = {
   };
   const netRemote = {}, $n = id => document.getElementById(id), netp = $n('netp');
   let fb = null, room = null;
-  LEVELS.forEach((l, i) => { const o = document.createElement('option'); o.value = i; o.textContent = l.n; $n('nLv').appendChild(o); });
+  LEVELS.forEach((l, i) => { if (l.ny && !season()) return; const o = document.createElement('option'); o.value = i; o.textContent = l.n; $n('nLv').appendChild(o); });
   $n('nLv').value = 1;
   function netMsg(s) { $n('nMsg').textContent = s; }
   function quitGame() { if (G && G.net) { netLeave(); } scr = 'menu'; R = null; syncAct(); }
@@ -2145,9 +2168,9 @@ const SPR = {
     const won = mine === 'murka' ? (!myF || !!myF.home) : !survived;
     const coins = (won ? 20 : 5) + dailyBonus(), delta = fair ? (won ? 25 : -10) : 0;
     const rating0 = prog.rating; prog.rating = Math.max(0, prog.rating + delta); const shown = prog.rating - rating0; prog.games++; if (won) prog.wins++;
-    earn(coins);
+    const got = earn(coins), cur = nyNow() ? ' ёлочных игрушек' : ' монет';
     sfx.win();
-    R = { net: true, reward: '+' + coins + ' монет' + (shown ? ', рейтинг ' + (shown > 0 ? '+' : '') + shown : ''), rows, msg: !murkas.some(here) ? 'Все Мурки вышли из игры' : survived ? 'Мурки выиграли!' : 'Йода нашёл всех!' };
+    R = { net: true, reward: '+' + got + cur + (shown ? ', рейтинг ' + (shown > 0 ? '+' : '') + shown : ''), rows, msg: !murkas.some(here) ? 'Все Мурки вышли из игры' : survived ? 'Мурки выиграли!' : 'Йода нашёл всех!' };
     scr = 'result'; syncAct();
   }
   function drawNetResult(x, y, w) {
@@ -2211,17 +2234,22 @@ const SPR = {
   let shopTab = 'cat';
   function openShop() { $n('shop').hidden = false; shopTab = G && scr === 'play' && G.mode === 'seek' && G.helper !== 'kitten' ? 'dog' : shopTab; shopRender(); }
   function shopRender() {
-    $n('shopCoins').textContent = 'Монет: ' + prog.coins;
+    $n('shopCoins').textContent = 'Монет: ' + prog.coins + ' · Игрушек: ' + prog.toys;
     $n('tabCat').classList.toggle('sel', shopTab === 'cat'); $n('tabDog').classList.toggle('sel', shopTab === 'dog');
     const grid = $n('shopGrid'), myRank = rankOf(prog.rating); grid.textContent = '';
+    $n('shopAdv').hidden = !season();
     SKINS[shopTab].forEach(s => {
+      if (s.toys && !season() && !prog.owned[s.id]) return;
       const card = document.createElement('div'), c = document.createElement('canvas'), b = document.createElement('b'), btn = document.createElement('button');
       const owned = !!prog.owned[s.id], on = prog.skin[shopTab] === s.id;
       card.className = 'sk' + (on ? ' on' : ''); c.width = c.height = 96; b.textContent = s.n; btn.type = 'button';
       const keep = ctx; ctx = c.getContext('2d'); toon(shopTab, shopTab === 'cat' ? 40 : 34, 76, 1, false, shopTab === 'cat' ? 'calm' : 'walk', shopTab === 'cat' ? 0.58 : 0.5, s.id); ctx = keep;
       if (on) { btn.textContent = 'Надето'; btn.disabled = true; }
       else if (owned) { btn.textContent = 'Надеть'; btn.onclick = () => { prog.skin[shopTab] = s.id; saveBest(); netSync(); shopRender(); }; }
-      else if (s.gift) { btn.textContent = 'Забрать подарок'; btn.onclick = () => { prog.owned[s.id] = 1; prog.skin[shopTab] = s.id; saveBest(); netSync(); shopRender(); }; }
+      else if (s.toys) {
+        btn.textContent = s.price + ' игрушек'; btn.disabled = prog.toys < s.price; btn.classList.add('advbtn');
+        btn.onclick = () => { if (prog.toys < s.price) return; prog.toys -= s.price; prog.owned[s.id] = 1; prog.skin[shopTab] = s.id; saveBest(); netSync(); shopRender(); };
+      }
       else if (s.rank) {
         const ok = myRank >= s.rank; btn.textContent = ok ? 'Забрать' : 'Ранг: ' + RANKS[s.rank][0]; btn.disabled = !ok;
         if (ok) btn.onclick = () => { prog.owned[s.id] = 1; prog.skin[shopTab] = s.id; saveBest(); netSync(); shopRender(); };
@@ -2235,6 +2263,38 @@ const SPR = {
   $n('tabCat').addEventListener('click', () => { shopTab = 'cat'; shopRender(); });
   $n('tabDog').addEventListener('click', () => { shopTab = 'dog'; shopRender(); });
   $n('shopClose').addEventListener('click', () => { $n('shop').hidden = true; });
+  // ---------- advent calendar: one window a day in December ----------
+  const advGift = d => d === 31 ? 200 : d % 7 === 0 ? 80 : 30;
+  function advState() {
+    const now = new Date(), m = now.getMonth(), day = now.getDate();
+    const y = m === 0 ? now.getFullYear() - 1 : now.getFullYear();
+    const upTo = m === 11 ? day : m === 0 && day <= 10 ? 31 : 0;
+    if (prog.adv.y !== y) prog.adv = { y, d: [] };
+    return { y, upTo, now };
+  }
+  function advRender() {
+    const s = advState(), grid = $n('advGrid'); grid.textContent = '';
+    $n('advToys').textContent = 'Игрушек: ' + prog.toys;
+    if (!s.upTo) {
+      const ny = new Date(s.now.getFullYear(), 11, 1), left = Math.ceil((ny - s.now) / 864e5);
+      $n('advMsg').textContent = 'Предпросмотр. Окошки начнут открываться 1 декабря — осталось дней: ' + left + '. А игрушки уже можно собирать на уровне «Новый год»!';
+    } else {
+      const ready = Array.from({ length: s.upTo }, (_, i) => i + 1).filter(d => !prog.adv.d.includes(d)).length;
+      $n('advMsg').textContent = ready ? 'Открой окошко — там подарок! Можно открыть: ' + ready : 'Сегодня всё открыто. Завтра будет новое окошко!';
+    }
+    for (let d = 1; d <= 31; d++) {
+      const b = document.createElement('button'), done = prog.adv.d.includes(d), ok = d <= s.upTo && !done;
+      b.type = 'button'; b.className = (done ? 'done' : ok ? 'ready' : '') + (advGift(d) > 30 ? ' big' : '');
+      b.innerHTML = done ? '✓<small>+' + advGift(d) + '</small>' : String(d) + (d === 31 ? '<small>Новый год</small>' : '');
+      b.disabled = !ok && !done;
+      if (ok) b.onclick = () => { prog.adv.d.push(d); prog.toys += advGift(d); saveBest(); netSync(); sfx.win(); advRender(); };
+      grid.appendChild(b);
+    }
+  }
+  function openAdv() { $n('adv').hidden = false; advRender(); }
+  $n('advClose').addEventListener('click', () => { $n('adv').hidden = true; if (!$n('shop').hidden) shopRender(); });
+  $n('shopAdv').addEventListener('click', openAdv);
+  setTimeout(() => { const s = advState(); if (s.upTo && Array.from({ length: s.upTo }, (_, i) => i + 1).some(d => !prog.adv.d.includes(d)) && scr === 'menu') openAdv(); }, 900);
   function rMsg(s) { $n('rMsg').textContent = s; }
   async function openRank() {
     $n('rankp').hidden = false; rRender(); rMsg('Загружаю…'); $n('rList').textContent = '';
@@ -2281,7 +2341,7 @@ const SPR = {
       const u = (await fb.A.signInWithEmailAndPassword(fb.auth, q.email, q.pin)).user;
       fb.uid = u.uid;
       const v = (await fb.get(fb.ref(fb.db, 'profiles/' + u.uid))).val();
-      if (v) { prog.coins = Math.max(prog.coins, v.coins || 0); prog.rating = Math.max(prog.rating, v.rating || 0); prog.games = Math.max(prog.games, v.games || 0); prog.wins = Math.max(prog.wins, v.wins || 0); Object.assign(prog.owned, v.owned || {}); if (v.skin) prog.skin = v.skin; }
+      if (v) { prog.coins = Math.max(prog.coins, v.coins || 0); prog.toys = Math.max(prog.toys || 0, v.toys || 0); if (v.adv && v.adv.y >= (prog.adv.y || 0)) prog.adv = { y: v.adv.y, d: Array.from(new Set([...(v.adv.y === prog.adv.y ? prog.adv.d : []), ...(v.adv.d || [])])) }; prog.rating = Math.max(prog.rating, v.rating || 0); prog.games = Math.max(prog.games, v.games || 0); prog.wins = Math.max(prog.wins, v.wins || 0); Object.assign(prog.owned, v.owned || {}); if (v.skin) prog.skin = v.skin; }
       prog.nick = q.nick; saveBest(); netSync(); $n('pPin').value = ''; openRank();
     } catch (e) { rMsg(/wrong-password|invalid-credential|user-not-found/.test(e.code || '') ? 'Неверный ник или PIN.' : 'Не получилось: ' + (e.code || e.message)); }
   }
@@ -2318,7 +2378,7 @@ const SPR = {
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(refreshCaches);
   requestAnimationFrame(frame);
   { const q = new URLSearchParams(location.search).get('room'); if (q && /^\d{4}$/.test(q)) openNet(q); }
-  if (location.hash === '#test') window.__pr = { get G() { return G; }, get R() { return R; }, get scr() { return scr; }, netBotTick, P, Y, M, cam, get zoom() { return zoom; }, LEVELS, SPOTS, start, spotAction, useItem, trip, toggleView, get pocket() { return pocket; }, get claimed() { return claimed; }, get fearStage() { return fearStage; }, get room() { return room; }, get fb() { return fb; }, TUNES, musicTick, get musIdx() { return mus.idx; }, get musLevel() { return mus.level; }, get actx() { return actx; }, dangerStage, layout, prog, SKINS, rankOf, earn, openShop, openRank, get Q() { return Q; }, setAuto(v) { autoLow = v; setQual(); }, netSync, netRemote, netStart, netEnter, netCreate, netLeave, openNet, netTick, netSniff, netEmit, update, draw, hideIn, unhide, sniffAt, bfs, adj, tileOf, BASE, blocked, FURN };
+  if (location.hash.startsWith('#test')) window.__pr = { get G() { return G; }, get R() { return R; }, get scr() { return scr; }, netBotTick, P, Y, M, cam, get zoom() { return zoom; }, LEVELS, SPOTS, start, spotAction, useItem, trip, toggleView, get pocket() { return pocket; }, get claimed() { return claimed; }, get fearStage() { return fearStage; }, get room() { return room; }, get fb() { return fb; }, TUNES, musicTick, get musIdx() { return mus.idx; }, get musLevel() { return mus.level; }, get actx() { return actx; }, dangerStage, layout, prog, SKINS, rankOf, earn, openShop, openRank, get Q() { return Q; }, setAuto(v) { autoLow = v; setQual(); }, netSync, netRemote, netStart, netEnter, netCreate, netLeave, openNet, netTick, netSniff, netEmit, update, draw, hideIn, unhide, sniffAt, bfs, adj, tileOf, BASE, blocked, FURN };
 })();
 </script>
 </html>

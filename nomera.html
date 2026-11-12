@@ -887,8 +887,8 @@ const SPR = {
     ctx.beginPath(); ctx.moveTo(clamp(x, bx + 14, bx + w - 14) - 8, y + 19); ctx.lineTo(clamp(x, bx + 14, bx + w - 14), y + 32); ctx.lineTo(clamp(x, bx + 14, bx + w - 14) + 8, y + 19); ctx.fillStyle = '#fff'; ctx.fill();
     text(s, bx + w / 2, y + 1, 26, INK);
   }
-  function taskText() {
-    const t = L.task; if (!t) return '';
+  function taskText(lv) {
+    const t = (lv || L || {}).task; if (!t) return '';
     if (t.k === 'color') return `Найди ${t.n} ${{ yellow: 'жёлтых', blue: 'синих', red: 'красных', black: 'чёрных', green: 'иностранных' }[t.c]}${t.n === 1 ? '' : ''}`.replace('Найди 1 красных', 'Найди 1 красный').replace('Найди 1 жёлтых', 'Найди 1 жёлтый') + (t.n === 1 ? ' номер' : ' номера');
     if (t.k === 'pet') return t.n === 1 ? 'Найди машину с собакой или кошкой' : `Найди ${t.n} машины с собакой или кошкой`;
     return `Найди ${t.n} номера с цифрой ${t.d}`;
@@ -1052,7 +1052,7 @@ const SPR = {
     else if (introOf.bonus === 'murka') { toon('cat', 240, 330, 1, 'calm', 1.3); text('Мурка за рулём: то газ, то тормоз!', 600, 180, 28, INK); text('Сама включает дворники и бибикает.', 600, 220, 26, INK); text('Очки ×2. Проиграть нельзя!', 600, 260, 28, '#3f9a5a'); }
     else {
       rr(140, 140, 680, 170, 18); sf('#fff', 3);
-      text('Задание: ' + taskText(), W / 2, 176, 30, INK);
+      text('Задание: ' + taskText(l), W / 2, 176, 30, INK);
       star(260, 226, 15, true); text(`${l.g[0]} очков — поездка удалась`, 290, 226, 25, INK, 'left');
       star(250, 266, 15, true); star(276, 266, 15, true); text(`${l.g[1]} очков`, 300, 266, 25, INK, 'left');
       star(556, 246, 15, true); star(582, 246, 15, true); star(608, 246, 15, true); text('+ задание', 632, 246, 25, INK, 'left');
@@ -1070,7 +1070,7 @@ const SPR = {
     [-1, 0, 1].forEach(q => star(W / 2 + q * 60, 158, 26, R.stars >= q + 2));
     outlined(R.score + ' очков', W / 2, 220, 46, '#b8860b');
     if (!R.pass) text(`Нужно хотя бы ${l.g[0]}. Попробуй ещё раз!`, W / 2, 262, 26, '#9a3b2a');
-    else if (l.task) text(R.task ? '✓ Задание выполнено' : '✗ Задание не выполнено: ' + taskText(), W / 2, 262, 25, R.task ? '#3f9a5a' : '#9a3b2a');
+    else if (l.task) text(R.task ? '✓ Задание выполнено' : '✗ Задание не выполнено: ' + taskText(l), W / 2, 262, 25, R.task ? '#3f9a5a' : '#9a3b2a');
     let x = 120;
     SPECIAL.forEach(t => { chip(t, x, 290, 96); outlined('×' + (R.found[t] || 0), x + 48, 330, 26, INK); x += 120; });
     text('🐶🐱 ×' + R.pets, x + 50, 302, 24, INK, 'center', 'Nunito');
